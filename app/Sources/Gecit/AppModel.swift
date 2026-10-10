@@ -25,6 +25,14 @@ struct TestRun: Equatable {
 
     var blockedFailures: Int { blocked.filter { if case .done(.failed) = $0.state { return true } else { return false } }.count }
     var normalFailures: Int { normal.filter { if case .done(.failed) = $0.state { return true } else { return false } }.count }
+
+    /// Açılan sitelerin ortalama açılış süresi (ms); hiçbiri açılmadıysa nil.
+    static func averageMs(_ rows: [TestRow]) -> Int? {
+        let values = rows.compactMap { row -> Int? in
+            if case .done(.ok(let ms, _)) = row.state { return ms } else { return nil }
+        }
+        return values.isEmpty ? nil : values.reduce(0, +) / values.count
+    }
 }
 
 /// Bilgisayarda kurulu, listedeki sitelerle aynı aileden bir uygulama (ör. Discord).

@@ -644,7 +644,13 @@ private struct Verdict: View {
             if !enabled { return ("Geçit kapalıyken engelli siteler açılmaz. Açmak için kemere tıkla.", false) }
             return ("Bazı engelli siteler açılmadı. \"Şimdi yeniden bul\" bu ağa uygun yöntemi arar.", false)
         }
-        return ("Her şey yolunda: engelli siteler Geçit üzerinden, normal siteler doğrudan açılıyor.", true)
+        var text = "Her şey yolunda: engelli siteler Geçit üzerinden, normal siteler doğrudan açılıyor."
+        if let via = TestRun.averageMs(run.blocked), let direct = TestRun.averageMs(run.normal) {
+            text += " Ortalama açılış Geçit üzerinden \(via) ms, doğrudan \(direct) ms."
+            text += " Bu süre ping değil: siteye sıfırdan bağlanıp (DNS, bağlantı, şifreleme) ilk yanıtı alma süresi."
+            if via <= direct + direct / 5 { text += " İkisi aynı seviyede, yani Geçit bağlantını yavaşlatmıyor." }
+        }
+        return (text, true)
     }
 }
 
