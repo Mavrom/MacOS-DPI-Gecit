@@ -648,7 +648,7 @@ private struct Verdict: View {
         if let via = TestRun.averageMs(run.blocked), let direct = TestRun.averageMs(run.normal) {
             text += " Ortalama açılış Geçit üzerinden \(via) ms, doğrudan \(direct) ms."
             text += " Bu süre ping değil: siteye sıfırdan bağlanıp (DNS, bağlantı, şifreleme) ilk yanıtı alma süresi."
-            if via <= direct + direct / 5 { text += " İkisi aynı seviyede, yani Geçit bağlantını yavaşlatmıyor." }
+            if via <= direct + direct / 5 { text += " Geçit'ten geçen siteler, hiç dokunulmayan sitelerle aynı hızda açılıyor." }
         }
         return (text, true)
     }
