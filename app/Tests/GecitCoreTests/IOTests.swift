@@ -127,7 +127,8 @@ final class StatusProbeTests: XCTestCase {
         let paths = try makeHome()
         defer { try? FileManager.default.removeItem(at: paths.home) }
         let runner = FakeRunner()
-        let status = await StatusProbe(paths: paths, runner: runner).probe()
+        // networksetup yolunu yok sayılan bir yere ver: sonuç macOS'ta da Linux'ta da aynı olsun.
+        let status = await StatusProbe(paths: paths, runner: runner, networksetup: "/yok/networksetup").probe()
         XCTAssertTrue(status.installed)
         XCTAssertTrue(status.enabled)
         XCTAssertEqual(status.profile, .guclu)
