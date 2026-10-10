@@ -40,7 +40,7 @@ struct ArchView: View {
 
     /// 0 (kapalı) ile 1 (açık) arası, 0,9 saniyelik yumuşak geçişle.
     private func openness(at date: Date) -> Double {
-        let p =min(1, max(0, date.timeIntervalSince(changedAt) / 0.9))
+        let p = min(1, max(0, date.timeIntervalSince(changedAt) / 0.9))
         let eased = p < 0.5 ? 2 * p * p : 1 - pow(-2 * p + 2, 2) / 2
         return from + (to - from) * eased
     }
