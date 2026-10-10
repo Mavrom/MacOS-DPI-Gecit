@@ -1,1 +1,1 @@
-# MacOS-DPI-Ge-it
+# MacOS-DPI-Geçit
