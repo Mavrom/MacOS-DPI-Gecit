@@ -89,7 +89,12 @@ case "$cmd" in
     echo "Bu ağda çalışan en hafif yöntemi arıyorum..."
     for p in hafif orta guclu; do
       echo "Deneniyor: $p"
-      write_config "$p"; restart_wait
+      write_config "$p"
+      if ! restart_wait; then echo "SpoofDPI bu yöntemle açılmadı: $p"; continue; fi
+      # Tek bir zaman aşımı (ilk DNS sorgusu, telefon paylaşımında anlık kopma) daha ağır
+      # yönteme geçirmesin: hafif yöntemler gereksiz yere atlanmasın diye bir kez daha dene.
+      if test_engelli; then echo "$(yesil Seçildi:) $p"; exit 0; fi
+      echo "Tekrar deneniyor: $p"; sleep 2
       if test_engelli; then echo "$(yesil Seçildi:) $p"; exit 0; fi
     done
     write_config orta
