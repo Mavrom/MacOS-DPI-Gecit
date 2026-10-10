@@ -1,5 +1,9 @@
 # MacOS-DPI-Geçit (macdpi çekirdeği)
 
+> **Durum (v1.0.0):** Kurulum paketi GitHub'ın macOS 14 ve 15 makinelerinde derlendi, kuruldu ve test edildi: servisler açılışta kalkıyor, yalnızca listedeki siteler SpoofDPI'dan geçiyor, kaldırma temiz. Türkiye'deki gerçek engelin aşıldığı ise henüz canlı bir Türk bağlantısında doğrulanmadı. Sorun yaşarsan Issues'a `macdpi test` çıktısıyla yaz.
+>
+> **İndir:** [Releases](../../releases) sayfasından `Gecit-*.pkg` dosyasını indir ve çift tıkla. İmzasız olduğu için ilk açılışta uyarı çıkarsa: Sistem Ayarları > Gizlilik ve Güvenlik > "Yine de Aç".
+
 VPN değil. İnternetin başka bir sunucudan dolaşmaz, hız ve gecikme değişmez.
 Bilgisayarın açılışında kendiliğinden başlar, şifre sormaz, elle aç kapat gerekmez.
 Wi-Fi, ev modemi, telefondan internet paylaşımı (Wi-Fi ya da USB) fark etmez.
