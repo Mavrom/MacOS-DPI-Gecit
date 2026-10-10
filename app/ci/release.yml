@@ -34,9 +34,11 @@ jobs:
           sudo installer -pkg build/Gecit-*.pkg -target /
           sudo cat /var/log/gecit-kurulum.log || true
           test -x "/Applications/Geçit.app/Contents/MacOS/Gecit"
-          sleep 10
-          nc -z 127.0.0.1 18080
-          curl -fsS http://127.0.0.1:18079/proxy.pac | grep -q '"discord.com"'
+          tani() { sudo launchctl print system/com.macdpi.spoofdpi | head -40 || true; sudo tail -50 /usr/local/macdpi/var/log/*.log || true; }
+          ok=0; for i in $(seq 1 30); do if nc -z 127.0.0.1 18080; then ok=1; break; fi; sleep 2; done
+          if [ $ok != 1 ]; then echo "SpoofDPI 18080'de açılmadı"; tani; exit 1; fi
+          ok=0; for i in $(seq 1 15); do if curl -fsS http://127.0.0.1:18079/proxy.pac | grep -q '"discord.com"'; then ok=1; break; fi; sleep 2; done
+          if [ $ok != 1 ]; then echo "PAC gelmedi"; curl -sS http://127.0.0.1:18079/proxy.pac || true; tani; exit 1; fi
           macdpi durum --json | python3 -m json.tool
           pgrep -x Gecit || open -a "/Applications/Geçit.app" --args --ilk
       - name: Arayüzün ekran görüntüsü
