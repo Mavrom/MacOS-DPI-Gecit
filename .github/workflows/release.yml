@@ -24,22 +24,35 @@ jobs:
         run: |
           if [ "$GITHUB_REF_TYPE" = tag ]; then SURUM="${GITHUB_REF_NAME#v}"; else SURUM=0.0.0; fi
           SURUM="$SURUM" ./paketle.sh
-      - name: Paketi bu makineye kur ve çekirdeği dene
-        run: |
-          sudo installer -pkg build/*.pkg -target /
-          sudo cat /var/log/gecit-kurulum.log || true
-          test -d "/Applications/Geçit.app"
-          sleep 8
-          nc -z 127.0.0.1 18080
-          curl -fsS http://127.0.0.1:18079/proxy.pac | grep -q '"discord.com"'
-          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 -x http://127.0.0.1:18080 https://discord.com/)
-          echo "discord.com proxy üzerinden: $code"; [ "$code" != "000" ]
-          macdpi durum --json
-          sudo sh /usr/local/macdpi/lib/kaldir.sh
       - uses: actions/upload-artifact@v4
         with:
           name: Gecit-pkg
           path: app/build/*.pkg
+      - name: Paketi gerçekten kur (kullanıcının yapacağı gibi)
+        run: |
+          sudo installer -pkg build/Gecit-*.pkg -target /
+          sudo cat /var/log/gecit-kurulum.log || true
+          test -x "/Applications/Geçit.app/Contents/MacOS/Gecit"
+          sleep 10
+          nc -z 127.0.0.1 18080
+          curl -fsS http://127.0.0.1:18079/proxy.pac | grep -q '"discord.com"'
+          macdpi durum --json | python3 -m json.tool
+          pgrep -x Gecit || open -a "/Applications/Geçit.app" --args --ilk
+      - name: Arayüzün ekran görüntüsü
+        continue-on-error: true
+        run: |
+          sleep 15
+          pgrep -x Gecit
+          screencapture -x /tmp/gecit-ekran.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Gecit-ekran
+          path: /tmp/gecit-ekran.png
+          if-no-files-found: ignore
+      - name: Kaldır
+        if: always()
+        run: sudo sh ../kaldir.sh || true
       - name: Release
         if: github.ref_type == 'tag'
         env:
