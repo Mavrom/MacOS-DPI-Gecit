@@ -1,0 +1,26 @@
+# Engelli siteler listesi. Yalnızca buradaki siteler (ve alt alan adları)
+# DPI aşma katmanından geçer; geri kalan her site normal, dokunulmadan açılır.
+# Ekle:  macdpi ekle site.com     Çıkar:  macdpi cikar site.com
+# Bir satıra bir alan adı. "discord.com" yazmak "*.discord.com"u da kapsar.
+
+# Discord
+discord.com
+discord.gg
+discord.co
+discord.media
+discord.dev
+discord.new
+discord.gift
+discordapp.com
+discordapp.net
+discordcdn.com
+discordstatus.com
+dis.gd
+
+# Roblox
+roblox.com
+rbxcdn.com
+rbx.com
+
+# Wattpad
+wattpad.com
