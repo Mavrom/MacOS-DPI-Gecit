@@ -121,11 +121,13 @@ public struct StatusProbe: Sendable {
 
 // SiteTester.swift
 public enum Route: String, Sendable { case viaMacdpi, direct }
-public enum Outcome: Equatable, Sendable { case ok(ms: Int, status: Int), failed(String) }
+public enum Outcome: Equatable, Sendable { case ok(ms: Int, status: Int), okCold(ms: Int, status: Int), failed(String) }
 public struct SiteTester: Sendable {
     public static let normalSites: [String] = ["google.com","youtube.com","apple.com","github.com","eksisozluk.com","trendyol.com","hepsiburada.com","sahibinden.com","turkiye.gov.tr","whatsapp.com","instagram.com"]
     public init(timeout: TimeInterval = 10)
-    /// GET https://host/ ; any HTTP response = .ok (handshake completed). Ephemeral session, no cache,
+    /// GET https://host/ ; any HTTP response = success (handshake completed). With warm measurement,
+    /// a failed HEAD returns .okCold so its initial connection time is not treated as warm latency.
+    /// Ephemeral session, no cache,
     /// does not follow redirects (count the 3xx as ok). viaMacdpi: connectionProxyDictionary
     /// HTTP+HTTPS proxy 127.0.0.1:18080 (string keys "HTTPEnable","HTTPProxy","HTTPPort",
     /// "HTTPSEnable","HTTPSProxy","HTTPSPort"); direct: connectionProxyDictionary = [:] (ignores system PAC).

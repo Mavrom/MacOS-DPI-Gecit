@@ -559,6 +559,7 @@ private struct TestColumn: View {
         switch s {
         case .waiting: return "–"
         case .done(.ok(let ms, _)): return "\(ms) ms"
+        case .done(.okCold(let ms, _)): return "\(ms) ms*"
         case .done(.failed): return "açılmadı"
         }
     }
@@ -583,7 +584,7 @@ private struct StatusDot: View {
                     .animation(.linear(duration: 0.8).repeatForever(autoreverses: false), value: spin)
                     .onAppear { spin = true }
                     .onDisappear { spin = false } // "Yeniden test et"te tekrar dönebilsin
-            case .done(.ok):
+            case .done(.ok), .done(.okCold):
                 Circle().fill(Palette.pass)
                 Image(systemName: "checkmark").font(.system(size: 8, weight: .heavy)).foregroundStyle(.white)
             case .done(.failed):
@@ -612,6 +613,7 @@ private struct LatencyBar: View {
 
     private var fraction: CGFloat {
         if case .done(.ok(let ms, _)) = state { return min(1, max(0.04, CGFloat(ms) / 400)) }
+        if case .done(.okCold(let ms, _)) = state { return min(1, max(0.04, CGFloat(ms) / 400)) }
         return 0
     }
 }
@@ -738,5 +740,8 @@ struct ToastView: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: model.toast)
+    }
+}
+onse: 0.4, dampingFraction: 0.8), value: model.toast)
     }
 }

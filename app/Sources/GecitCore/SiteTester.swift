@@ -4,7 +4,11 @@ import FoundationNetworking
 #endif
 
 public enum Route: String, Sendable { case viaMacdpi, direct }
-public enum Outcome: Equatable, Sendable { case ok(ms: Int, status: Int), failed(String) }
+public enum Outcome: Equatable, Sendable {
+    case ok(ms: Int, status: Int)
+    case okCold(ms: Int, status: Int)
+    case failed(String)
+}
 
 public struct SiteTester: Sendable {
     public static let normalSites: [String] = [
@@ -19,7 +23,8 @@ public struct SiteTester: Sendable {
         self.timeout = timeout
     }
 
-    /// GET https://host/ ; herhangi bir HTTP yanıtı (3xx dahil) = .ok.
+    /// GET https://host/ ; herhangi bir HTTP yanıtı (3xx dahil) = başarı. Warm HEAD başarısızsa
+    /// ilk bağlantı süresi .okCold olarak döner ve sıcaklık ortalamalarına dahil edilmez.
     /// `measureWarm` açıksa, açılan siteye aynı bağlantı üzerinden bir HEAD daha gönderilir ve
     /// süre olarak o kullanılır: DNS, bağlantı kurma ve şifreleme dışarıda kalır, ping'e yakın
     /// "gidip gelme" süresi ölçülür (tarayıcı da bağlantıyı böyle yeniden kullanır).
@@ -57,6 +62,9 @@ public struct SiteTester: Sendable {
         request.httpMethod = "HEAD"
         if case .ok(let warm, _) = await Self.fetch(session, request) {
             return .ok(ms: warm, status: status)
+        }
+        if case .ok(let cold, _) = first {
+            return .okCold(ms: cold, status: status)
         }
         return first
     }

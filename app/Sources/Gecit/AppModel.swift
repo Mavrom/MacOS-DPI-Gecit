@@ -26,9 +26,10 @@ struct TestRun: Equatable {
     var blockedFailures: Int { blocked.filter { if case .done(.failed) = $0.state { return true } else { return false } }.count }
     var normalFailures: Int { normal.filter { if case .done(.failed) = $0.state { return true } else { return false } }.count }
 
-    /// Açılan sitelerin ortalama yanıt süresi (ms); hiçbiri açılmadıysa nil.
+    /// Sıcak ölçümü alınan sitelerin ortalama yanıt süresi (ms); hiçbiri yoksa nil.
     static func averageMs(_ rows: [TestRow]) -> Int? {
         let values = rows.compactMap { row -> Int? in
+            // Cold GET measurements are not warm latency measurements.
             if case .done(.ok(let ms, _)) = row.state { return ms } else { return nil }
         }
         return values.isEmpty ? nil : values.reduce(0, +) / values.count
@@ -303,10 +304,11 @@ final class AppModel: ObservableObject {
 
             // Hiçbiri olmadı: site bu ağda gerçekten engelli mi?
             let direct = await SiteTester(timeout: 8).test(host: label, route: .direct)
-            if case .ok = direct {
-                fix = .notBlocked(label)
-            } else {
+            if case .failed = direct {
                 fix = .exhausted(label)
+            } else {
+                // A successful GET with no warm measurement is still a direct success.
+                fix = .notBlocked(label)
             }
             await apply(.orta)
             await refresh()
