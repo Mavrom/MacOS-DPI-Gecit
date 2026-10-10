@@ -42,6 +42,10 @@ lipo -create -output "$APP/Contents/Resources/core/bin/spoofdpi" "$TMP/arm64/spo
 chmod 755 "$APP/Contents/Resources/core/bin/spoofdpi"
 "$APP/Contents/Resources/core/bin/spoofdpi" --version >/dev/null
 
+# Uygulamanın kendi sürümü paket sürümüyle aynı olsun (Hakkında'da ve güncellemede doğru görünsün).
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $SURUM" "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $SURUM" "$APP/Contents/Info.plist"
+
 # İçerik değişti: uygulamayı yeniden imzala
 codesign --force --deep -s - "$APP"
 

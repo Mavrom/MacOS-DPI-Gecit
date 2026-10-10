@@ -4,7 +4,7 @@ VPN değil. Yalnızca engelli listedeki siteler (Discord, Roblox, Wattpad ve sen
 
 ### 1.0.1'de değişenler
 - Otomatik yöntem seçimi, bir sitede tek seferlik zaman aşımı olunca daha ağır yönteme (Güçlü) geçmiyor. Her yöntemi iki kez dener, böylece ağında çalışan en hafif yöntemde kalır.
-- Canlı testte ortalama açılış süresi, Geçit üzerinden ve doğrudan yan yana gösteriliyor. Buradaki ms ping değildir: siteye sıfırdan bağlanıp ilk yanıtı alma süresidir. İkisi aynı seviyedeyse Geçit yavaşlatmıyor demektir.
+- Canlı testte ortalama açılış süresi, Geçit üzerinden ve doğrudan yan yana gösteriliyor. Buradaki ms ping değildir: siteye sıfırdan bağlanıp sayfayı alma süresidir. İkisi aynı seviyedeyse Geçit yavaşlatmıyor demektir.
 
 1.0.0 kuruluysa yeni paketi kurman yeterli. Sonra Geçit'te "Şimdi yeniden bul"a bas ki yöntem yeniden seçilsin.
 
