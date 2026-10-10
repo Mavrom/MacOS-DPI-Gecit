@@ -8,8 +8,8 @@ VPN değil. Yalnızca engelli listedeki siteler (Discord, Roblox, Wattpad ve sen
 3. Kurulum bitince Geçit açılır ve bulunduğun ağa uygun yöntemi kendisi seçer. Tarayıcıyı ve Discord'u bir kez kapatıp aç.
 
 ### Neler doğrulandı
-- GitHub'ın macOS 14 ve 15 makinelerinde: uygulama derlendi, 33 birim testi geçti, .pkg kuruldu, arka plan servisleri ve PAC çalıştı, Geçit açıldı, kaldırma temiz çalıştı.
-- Çekirdek her profil (hafif, orta, güçlü) için uçtan uca test edildi.
+- GitHub'ın macOS 14 makinesinde: uygulama derlendi, 33 birim testi geçti, .pkg gerçekten kuruldu, arka plan servisleri ve PAC çalıştı, Geçit açıldı, kaldırma temiz çalıştı.
+- Çekirdek macOS 14 ve 15 makinelerinde her profil (hafif, orta, güçlü) için uçtan uca test edildi: kurulum, servisler, PAC, proxy üzerinden bağlantı, çökünce yeniden başlama ve kaldırma.
 
 ### Henüz doğrulanmayanlar
 - Türkiye'deki gerçek engelin aşılması canlı bir Türk bağlantısında test edilmedi.
