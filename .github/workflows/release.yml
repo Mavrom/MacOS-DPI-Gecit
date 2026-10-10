@@ -1,0 +1,47 @@
+# GitHub'a taşınınca .github/workflows/release.yml olarak konur.
+# Her push'ta macOS'ta derler ve testleri çalıştırır; "v*" etiketinde .pkg üretip Release'e ekler.
+name: derle-ve-yayinla
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+permissions:
+  contents: write
+jobs:
+  mac:
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kabuk betikleri sözdizimi
+        run: for f in ../kur.sh ../kaldir.sh ../lib/*.sh ../lib/macdpi build.sh paketle.sh paket/scripts/*; do sh -n "$f"; done
+      - name: Birim testleri
+        run: swift test
+      - name: Paket
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then SURUM="${GITHUB_REF_NAME#v}"; else SURUM=0.0.0; fi
+          SURUM="$SURUM" ./paketle.sh
+      - name: Paketi bu makineye kur ve çekirdeği dene
+        run: |
+          sudo installer -pkg build/*.pkg -target /
+          sudo cat /var/log/gecit-kurulum.log || true
+          test -d "/Applications/Geçit.app"
+          sleep 8
+          nc -z 127.0.0.1 18080
+          curl -fsS http://127.0.0.1:18079/proxy.pac | grep -q '"discord.com"'
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 -x http://127.0.0.1:18080 https://discord.com/)
+          echo "discord.com proxy üzerinden: $code"; [ "$code" != "000" ]
+          macdpi durum --json
+          sudo sh /usr/local/macdpi/lib/kaldir.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Gecit-pkg
+          path: app/build/*.pkg
+      - name: Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" build/*.pkg --title "Geçit $GITHUB_REF_NAME" --notes-file ../README.md

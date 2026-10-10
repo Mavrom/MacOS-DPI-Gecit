@@ -1,0 +1,4 @@
+#!/bin/sh
+# Güncellemede açık olan eski Geçit'i kapat (motor arka planda çalışmaya devam eder).
+pkill -x Gecit 2>/dev/null || true
+exit 0
