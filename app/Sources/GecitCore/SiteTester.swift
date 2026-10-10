@@ -20,7 +20,10 @@ public struct SiteTester: Sendable {
     }
 
     /// GET https://host/ ; herhangi bir HTTP yanıtı (3xx dahil) = .ok.
-    public func test(host: String, route: Route) async -> Outcome {
+    /// `measureWarm` açıksa, açılan siteye aynı bağlantı üzerinden bir HEAD daha gönderilir ve
+    /// süre olarak o kullanılır: DNS, bağlantı kurma ve şifreleme dışarıda kalır, ping'e yakın
+    /// "gidip gelme" süresi ölçülür (tarayıcı da bağlantıyı böyle yeniden kullanır).
+    public func test(host: String, route: Route, measureWarm: Bool = false) async -> Outcome {
         guard let url = URL(string: "https://\(host)/") else { return .failed("Geçersiz adres") }
 
         let config = URLSessionConfiguration.ephemeral
@@ -49,6 +52,16 @@ public struct SiteTester: Sendable {
         request.cachePolicy = .reloadIgnoringLocalCacheData
         request.timeoutInterval = timeout
 
+        let first = await Self.fetch(session, request)
+        guard measureWarm, case .ok(_, let status) = first else { return first }
+        request.httpMethod = "HEAD"
+        if case .ok(let warm, _) = await Self.fetch(session, request) {
+            return .ok(ms: warm, status: status)
+        }
+        return first
+    }
+
+    private static func fetch(_ session: URLSession, _ request: URLRequest) async -> Outcome {
         let started = Date()
         return await withCheckedContinuation { (cont: CheckedContinuation<Outcome, Never>) in
             let task = session.dataTask(with: request) { _, response, error in

@@ -26,7 +26,7 @@ struct TestRun: Equatable {
     var blockedFailures: Int { blocked.filter { if case .done(.failed) = $0.state { return true } else { return false } }.count }
     var normalFailures: Int { normal.filter { if case .done(.failed) = $0.state { return true } else { return false } }.count }
 
-    /// Açılan sitelerin ortalama açılış süresi (ms); hiçbiri açılmadıysa nil.
+    /// Açılan sitelerin ortalama yanıt süresi (ms); hiçbiri açılmadıysa nil.
     static func averageMs(_ rows: [TestRow]) -> Int? {
         let values = rows.compactMap { row -> Int? in
             if case .done(.ok(let ms, _)) = row.state { return ms } else { return nil }
@@ -376,7 +376,7 @@ final class AppModel: ObservableObject {
         let jobs = blocked.map { (Route.viaMacdpi, $0) } + normal.map { (Route.direct, $0) }
         for (route, host) in jobs {
             Task {
-                let outcome = await tester.test(host: host, route: route)
+                let outcome = await tester.test(host: host, route: route, measureWarm: true)
                 if route == .viaMacdpi, let i = tests.blocked.firstIndex(where: { $0.host == host }) {
                     tests.blocked[i].state = .done(outcome)
                 } else if route == .direct, let i = tests.normal.firstIndex(where: { $0.host == host }) {
