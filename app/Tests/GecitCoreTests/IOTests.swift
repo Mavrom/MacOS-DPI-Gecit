@@ -7,6 +7,7 @@ final class FakeRunner: CommandRunning, @unchecked Sendable {
     private let lock = NSLock()
     private var _calls: [Call] = []
     var calls: [Call] { lock.lock(); defer { lock.unlock() }; return _calls }
+    private func record(_ c: Call) { lock.lock(); _calls.append(c); lock.unlock() }
     var handler: @Sendable (String, [String]) -> CommandResult
     var streamLines: [String] = []
 
@@ -15,12 +16,12 @@ final class FakeRunner: CommandRunning, @unchecked Sendable {
     }
 
     func run(_ executable: String, _ args: [String]) async -> CommandResult {
-        lock.lock(); _calls.append(Call(exe: executable, args: args)); lock.unlock()
+        record(Call(exe: executable, args: args))
         return handler(executable, args)
     }
 
     func stream(_ executable: String, _ args: [String]) -> AsyncStream<String> {
-        lock.lock(); _calls.append(Call(exe: executable, args: args)); lock.unlock()
+        record(Call(exe: executable, args: args))
         let lines = streamLines
         return AsyncStream { c in
             for l in lines { c.yield(l) }
