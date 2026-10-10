@@ -1,0 +1,30 @@
+#!/bin/sh
+# Geçit kurulum paketi, kurulum sonrası adım (Installer bunu root olarak çalıştırır).
+# Uygulamanın içindeki macdpi çekirdeğini kurar ve Geçit'i kullanıcının oturumunda açar.
+APP="/Applications/Geçit.app"
+CORE="$APP/Contents/Resources/core"
+LOG=/var/log/gecit-kurulum.log
+PATH=/usr/bin:/bin:/usr/sbin:/sbin; export PATH
+
+echo "== $(date '+%Y-%m-%d %H:%M:%S') Geçit kurulumu" >> "$LOG"
+
+USER_NAME=$(stat -f %Su /dev/console)
+if [ -z "$USER_NAME" ] || [ "$USER_NAME" = root ] || [ "$USER_NAME" = loginwindow ]; then
+  USER_NAME=$(ls -l /dev/console | awk '{print $3}')
+fi
+
+BIN_ARG=""
+[ -x "$CORE/bin/spoofdpi" ] && BIN_ARG="--bin $CORE/bin/spoofdpi"
+
+# shellcheck disable=SC2086
+if ! /bin/sh "$CORE/kur.sh" --sessiz $BIN_ARG --kullanici "$USER_NAME" >> "$LOG" 2>&1; then
+  echo "Çekirdek kurulamadı, ayrıntı: $LOG" >> "$LOG"
+  exit 1
+fi
+
+# Geçit'i kullanıcı olarak aç: ilk açılışta penceresini gösterir ve bu ağa uygun yöntemi kendisi seçer.
+USER_ID=$(id -u "$USER_NAME" 2>/dev/null)
+if [ -n "$USER_ID" ] && [ "$USER_NAME" != root ]; then
+  launchctl asuser "$USER_ID" sudo -u "$USER_NAME" /usr/bin/open -a "$APP" --args --ilk >> "$LOG" 2>&1 || true
+fi
+exit 0

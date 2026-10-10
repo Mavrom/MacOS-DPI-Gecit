@@ -1,0 +1,652 @@
+<title>Geçit</title>
+<style>
+/* Layout: a real macOS window (hero "kemer" + three working cards) beside the menu-bar panel; stacks on phones. */
+:root {
+  --bg: #e9eeec;            /* desk behind the window */
+  --win: #f7f9f8;           /* window surface */
+  --card: #ffffff;
+  --fg: #16201d;
+  --muted: #5f6d68;
+  --line: #dfe6e3;
+  --chip: #eef3f1;
+  --pass: #0fa77b;          /* geçit açık */
+  --pass-soft: #d9f3ea;
+  --warn: #c98512;
+  --warn-soft: #f8ecd3;
+  --stop: #d2453b;
+  --stop-soft: #f8dfdc;
+  --accent: #0d8f6b;
+  --night: #0b1513;         /* the hero is always night */
+  --night-2: #12211d;
+  --night-fg: #eaf5f1;
+  --night-muted: #93aaa2;
+  --glow: #36e0ad;
+  --shadow: 0 30px 60px -20px rgba(16, 40, 33, .28), 0 0 0 1px rgba(16, 40, 33, .08);
+  --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
+  --round: ui-rounded, "SF Pro Rounded", -apple-system, "Nunito", "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #070c0b; --win: #111917; --card: #18221f; --fg: #e7f1ed; --muted: #8fa29b;
+    --line: #25322e; --chip: #1f2b28; --pass: #3ddcab; --pass-soft: #12352b; --warn: #f0b443;
+    --warn-soft: #3a2c10; --stop: #ff7a6e; --stop-soft: #3b1a17; --accent: #3ddcab;
+    --shadow: 0 30px 70px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.06);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #070c0b; --win: #111917; --card: #18221f; --fg: #e7f1ed; --muted: #8fa29b;
+  --line: #25322e; --chip: #1f2b28; --pass: #3ddcab; --pass-soft: #12352b; --warn: #f0b443;
+  --warn-soft: #3a2c10; --stop: #ff7a6e; --stop-soft: #3b1a17; --accent: #3ddcab;
+  --shadow: 0 30px 70px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.06);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); color: var(--fg); font-family: var(--ui); }
+body { padding: 28px 16px 48px; font-size: 13px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.stage { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; align-items: start; }
+@media (max-width: 1020px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.intro { max-width: 1240px; margin: 0 auto 18px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; }
+.intro h1 { margin: 0; font: 600 15px/1.2 var(--round); letter-spacing: .01em; }
+.intro p { margin: 2px 0 0; color: var(--muted); max-width: 62ch; }
+.seg { display: inline-flex; background: var(--chip); border-radius: 9px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { border: 0; background: transparent; padding: 5px 11px; border-radius: 7px; font-size: 12px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+
+/* ---------- window ---------- */
+.window { background: var(--win); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; min-width: 0; }
+.titlebar { height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 14px; position: relative; }
+.lights { display: flex; gap: 8px; }
+.lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+.lights i:nth-child(1) { background: #ff5f57; } .lights i:nth-child(2) { background: #febc2e; } .lights i:nth-child(3) { background: #28c840; }
+.titlebar .t { position: absolute; left: 0; right: 0; text-align: center; font-weight: 600; font-size: 13px; color: var(--muted); pointer-events: none; }
+
+/* ---------- hero ---------- */
+.hero { margin: 0 12px; border-radius: 12px; background: radial-gradient(120% 140% at 18% 100%, var(--night-2), var(--night) 60%); color: var(--night-fg); display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 8px 28px; align-items: center; padding: 22px 28px 22px 18px; position: relative; overflow: visible; z-index: 2; border: 1px solid rgba(255,255,255,.06); }
+@media (max-width: 640px) { .hero { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; padding: 18px; } }
+.arch-btn { border: 0; background: none; padding: 0; width: 200px; height: 200px; position: relative; border-radius: 50%; }
+.arch-btn canvas { width: 200px; height: 200px; display: block; }
+.arch-btn .hint { position: absolute; bottom: 4px; left: 0; right: 0; font-size: 11px; color: var(--night-muted); opacity: 0; transition: opacity .2s; }
+.arch-btn:hover .hint, .arch-btn:focus-visible .hint { opacity: 1; }
+.state-eyebrow { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--night-muted); display: flex; align-items: center; gap: 8px; }
+@media (max-width: 640px) { .state-eyebrow { justify-content: center; } }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 0 4px color-mix(in srgb, var(--glow) 25%, transparent); }
+.hero h2 { margin: 6px 0 6px; font: 700 34px/1.05 var(--round); letter-spacing: -.01em; text-wrap: balance; }
+.hero .lede { margin: 0; color: var(--night-muted); max-width: 52ch; font-size: 14px; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+@media (max-width: 640px) { .facts { justify-content: center; } }
+.fact { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 999px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.08); font-size: 12px; color: var(--night-fg); }
+.fact svg { width: 14px; height: 14px; opacity: .8; }
+.fact b { font-weight: 600; }
+
+/* ---------- grid of cards ---------- */
+.body { padding: 14px 12px 14px; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 760px) { .body { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.col.stretch { align-content: stretch; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 16px; min-width: 0; }
+.card-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.card-h h3 { margin: 0; font: 600 13px/1.2 var(--ui); }
+.card-h .sub { color: var(--muted); font-size: 12px; }
+.span2 { grid-column: 1 / -1; }
+
+/* sites */
+.add { display: flex; gap: 8px; margin-bottom: 12px; }
+.add input { flex: 1; min-width: 0; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: var(--win); color: var(--fg); padding: 0 10px; font: 13px var(--ui); }
+.add input::placeholder { color: var(--muted); }
+.btn { height: 30px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); font-weight: 500; font-size: 12.5px; white-space: nowrap; }
+.btn.primary { background: var(--accent); border-color: transparent; color: #fff; }
+:root[data-theme="dark"] .btn.primary { color: #062019; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #062019; } }
+.err { color: var(--stop); font-size: 12px; margin: -6px 0 10px; }
+.groups { display: grid; gap: 4px; }
+.group { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 4px 12px; padding: 8px 6px; border-radius: 9px; }
+.group:hover { background: var(--chip); }
+.mono { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font: 700 15px var(--round); color: #fff; grid-row: span 2; }
+.gname { font-weight: 600; display: flex; gap: 8px; align-items: baseline; }
+.gname span { color: var(--muted); font-weight: 400; font-size: 12px; }
+.appb { margin-left: auto; font-style: normal; font-size: 11px; font-weight: 500; color: var(--pass); background: var(--pass-soft); border-radius: 999px; padding: 2px 8px 2px 5px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.appb i { width: 13px; height: 13px; border-radius: 4px; background: #5865F2; display: block; }
+.sites-note { margin: 12px 0 0; color: var(--muted); font-size: 11.5px; }
+.domains { display: flex; flex-wrap: wrap; gap: 5px; }
+.dom { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 8px; border-radius: 6px; background: var(--chip); font: 11.5px var(--mono); }
+.dom button { border: 0; background: none; width: 16px; height: 16px; border-radius: 4px; display: grid; place-items: center; color: var(--muted); padding: 0; opacity: .55; }
+.dom button:hover { opacity: 1; background: var(--stop-soft); color: var(--stop); }
+.dom.new { animation: pop .5s ease; }
+@keyframes pop { 0% { transform: scale(.8); background: var(--pass-soft); } 100% { transform: scale(1); } }
+
+/* networks */
+.nets { display: grid; gap: 2px; }
+.net { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 4px; border-radius: 8px; }
+.net .ic { width: 28px; height: 28px; border-radius: 8px; background: var(--chip); display: grid; place-items: center; color: var(--muted); }
+.net .ic svg { width: 15px; height: 15px; }
+.net .n { font-weight: 500; }
+.net .s { color: var(--muted); font-size: 12px; }
+.pill { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; }
+.pill.ok { background: var(--pass-soft); color: var(--pass); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.idle { background: var(--chip); color: var(--muted); }
+
+/* profile */
+.profiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.prof { text-align: left; border: 1px solid var(--line); background: var(--win); border-radius: 10px; padding: 9px 10px; display: grid; gap: 6px; }
+.prof[aria-pressed="true"] { border-color: var(--accent); background: var(--pass-soft); }
+.prof .bars { display: flex; gap: 2px; align-items: flex-end; height: 14px; }
+.prof .bars i { width: 4px; border-radius: 1px; background: var(--line); display: block; }
+.prof[aria-pressed="true"] .bars i.on { background: var(--accent); }
+.prof .bars i.on { background: var(--muted); }
+.prof b { font-size: 12.5px; }
+.prof-desc { color: var(--muted); font-size: 12px; margin: 10px 0 12px; min-height: 2.9em; }
+.auto { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.auto .note { color: var(--muted); font-size: 12px; }
+
+/* test */
+.tests { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 28px; }
+@media (max-width: 760px) { .tests { grid-template-columns: minmax(0, 1fr); } }
+.tcol h4 { margin: 0 0 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.trow { display: grid; grid-template-columns: 18px minmax(0, 1fr) 90px 52px; gap: 10px; align-items: center; padding: 4px 0; font-variant-numeric: tabular-nums; }
+.trow .h { font: 12px var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trow .ms { text-align: right; font-size: 12px; color: var(--muted); }
+.lat { height: 4px; border-radius: 2px; background: var(--chip); overflow: hidden; }
+.lat i { display: block; height: 100%; background: var(--pass); border-radius: 2px; width: 0; transition: width .5s ease; }
+.ico { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; }
+.ico.ok { background: var(--pass); color: #fff; }
+.ico.no { background: var(--stop); color: #fff; }
+.ico.wait { border: 2px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+.ico.idle { border: 2px dashed var(--line); }
+.ico svg { width: 10px; height: 10px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.verdict { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--pass-soft); color: var(--fg); font-size: 12.5px; display: flex; gap: 10px; align-items: center; }
+.verdict.bad { background: var(--stop-soft); }
+
+/* logs */
+details.logs summary { cursor: pointer; color: var(--muted); font-size: 12px; list-style: none; display: flex; gap: 6px; align-items: center; }
+details.logs summary::-webkit-details-marker { display: none; }
+details.logs pre { margin: 10px 0 0; background: var(--night); color: #b9d3ca; border-radius: 9px; padding: 12px; font: 11.5px/1.6 var(--mono); overflow-x: auto; }
+
+/* onboarding */
+.welcome { padding: 40px 28px 44px; display: grid; justify-items: center; text-align: center; gap: 12px; }
+.welcome h2 { margin: 6px 0 0; font: 700 30px/1.1 var(--round); }
+.welcome p { margin: 0; color: var(--muted); max-width: 52ch; font-size: 14px; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 14px 0 8px; width: 100%; max-width: 640px; text-align: left; }
+@media (max-width: 640px) { .steps { grid-template-columns: minmax(0, 1fr); } }
+.step { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.step b { display: block; margin-bottom: 3px; }
+.step span { color: var(--muted); font-size: 12px; }
+.bigbtn { height: 40px; padding: 0 22px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-weight: 600; font-size: 14px; }
+:root[data-theme="dark"] .bigbtn { color: #062019; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bigbtn { color: #062019; } }
+
+/* ---------- menu bar panel ---------- */
+.side { display: grid; gap: 10px; min-width: 0; }
+.menubar { height: 26px; border-radius: 8px; background: color-mix(in srgb, var(--win) 70%, transparent); border: 1px solid var(--line); display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding: 0 12px; font-size: 12px; color: var(--muted); }
+.menubar .me { display: grid; place-items: center; width: 24px; height: 20px; border-radius: 5px; background: var(--chip); color: var(--fg); }
+.menubar .me svg { width: 15px; height: 15px; }
+.panel { background: color-mix(in srgb, var(--win) 88%, transparent); backdrop-filter: blur(20px); border-radius: 14px; box-shadow: var(--shadow); padding: 14px; display: grid; gap: 12px; }
+.p-top { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: center; }
+.p-top canvas { width: 64px; height: 64px; border-radius: 14px; background: var(--night); display: block; }
+.p-top b { font: 700 17px/1.15 var(--round); display: block; }
+.p-top span { color: var(--muted); font-size: 12px; }
+.toggle { width: 38px; height: 22px; border-radius: 11px; border: 0; background: var(--line); position: relative; padding: 0; flex: none; }
+.toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
+.toggle[aria-checked="true"] { background: var(--pass); }
+.toggle[aria-checked="true"]::after { transform: translateX(16px); }
+.p-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; font-size: 12.5px; }
+.p-row .k { color: var(--muted); }
+.p-list { display: grid; gap: 1px; }
+.p-item { display: flex; justify-content: space-between; gap: 10px; padding: 5px 4px; font-size: 12.5px; }
+.p-item span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+.p-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.p-foot { display: flex; justify-content: space-between; color: var(--muted); font-size: 11.5px; padding: 0 2px; }
+.caption { color: var(--muted); font-size: 12px; padding: 0 2px; }
+
+/* fix popover + ladder */
+.fixbtn { margin-top: 12px; display: inline-flex; align-items: center; gap: 7px; border: 1px solid color-mix(in srgb, var(--glow) 35%, transparent); background: color-mix(in srgb, var(--glow) 10%, transparent); color: var(--glow); border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 500; }
+.fixbtn svg { width: 14px; height: 14px; }
+.fixwrap { position: relative; display: inline-block; }
+.pop { position: absolute; z-index: 5; top: calc(100% + 12px); left: 0; width: min(380px, calc(100vw - 48px)); background: var(--win); color: var(--fg); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 18px; text-align: left; display: grid; gap: 14px; }
+.pop::before { content: ""; position: absolute; top: -7px; left: 28px; width: 12px; height: 12px; background: var(--win); border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: rotate(45deg); }
+.pop h4 { margin: 0 0 4px; font: 700 18px/1.2 var(--round); }
+.pop p { margin: 0; color: var(--muted); font-size: 12px; }
+.pop input { height: 30px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); padding: 0 10px; font: 13px var(--ui); width: 100%; }
+.ladder { display: grid; grid-template-columns: repeat(3, 1fr); position: relative; padding-top: 2px; }
+.ladder::before { content: ""; position: absolute; top: 19px; left: 16.6%; right: 16.6%; border-top: 2px dashed var(--line); }
+.rung { display: grid; justify-items: center; gap: 6px; position: relative; font-size: 11.5px; color: var(--muted); }
+.rung .n { width: 26px; height: 26px; margin: 5px 0; border-radius: 50%; background: var(--card); border: 2px solid var(--line); display: grid; place-items: center; transition: all .3s; position: relative; }
+.rung.cur .n { background: var(--pass-soft); border-color: var(--accent); }
+.rung.cur .n::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.rung.try .n { background: var(--night); border-color: var(--night); }
+.rung.try .n::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 10px var(--glow); }
+.rung.try .n::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--glow); animation: ping 1.1s ease-out infinite; }
+.rung.ok .n { background: var(--pass); border-color: var(--pass); color: #fff; box-shadow: 0 0 14px color-mix(in srgb, var(--glow) 70%, transparent); }
+.rung.no .n { background: var(--stop-soft); border-color: var(--stop-soft); color: var(--stop); }
+.rung.cur, .rung.try, .rung.ok { color: var(--fg); font-weight: 600; }
+.rung svg { width: 11px; height: 11px; }
+@keyframes ping { 0% { transform: scale(.9); opacity: 1; } 100% { transform: scale(1.35); opacity: 0; } }
+.pop-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.pop-actions .wait { color: var(--muted); font-size: 12px; display: flex; gap: 8px; align-items: center; }
+.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+.method { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start; }
+.method .ic { width: 28px; height: 28px; border-radius: 8px; background: var(--pass-soft); color: var(--accent); display: grid; place-items: center; }
+.method .ic svg { width: 15px; height: 15px; }
+.method b { display: block; font-weight: 500; }
+.method span { color: var(--muted); font-size: 12px; }
+.linkbtn { border: 0; background: none; color: var(--muted); font-size: 12px; padding: 0; margin-left: auto; }
+.adv { display: grid; gap: 8px; margin-top: 12px; }
+.adv p { margin: 0; color: var(--muted); font-size: 11.5px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="intro">
+  <div>
+    <h1>Geçit · arayüz önizlemesi</h1>
+    <p>Kemerin içine tıklayınca geçit açılıp kapanır. “Bir site açılmıyor mu?” düğmesi yöntemleri sırayla dener; site ekleyip testi de oynatabilirsin. Mac'teki uygulama bu tasarımın SwiftUI karşılığıdır; veriler örnektir.</p>
+  </div>
+  <div class="seg" role="group" aria-label="Önizleme durumu" id="stateSeg">
+    <button data-s="active" aria-pressed="true">Açık</button>
+    <button data-s="degraded" aria-pressed="false">Sorunlu</button>
+    <button data-s="off" aria-pressed="false">Kapalı</button>
+    <button data-s="install" aria-pressed="false">Kurulu değil</button>
+  </div>
+</div>
+
+<div class="stage">
+  <section class="window" aria-label="Geçit ana pencere">
+    <div class="titlebar"><div class="lights"><i></i><i></i><i></i></div><div class="t">Geçit</div></div>
+
+    <div id="main">
+      <div class="hero">
+        <button class="arch-btn" id="arch" aria-label="Geçidi aç veya kapat">
+          <canvas id="archCanvas" width="400" height="400"></canvas>
+          <span class="hint" id="archHint">Kapatmak için tıkla</span>
+        </button>
+        <div>
+          <div class="state-eyebrow"><span class="dot" id="dot"></span><span id="eyebrow">Etkin · açılışta kendiliğinden başlar</span></div>
+          <h2 id="headline">Geçit açık</h2>
+          <p class="lede" id="lede">Discord, Roblox ve Wattpad engelsiz açılıyor. Diğer bütün siteler hiç dokunulmadan, her zamanki bağlantınla açılır.</p>
+          <div class="facts">
+            <span class="fact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1.2" fill="currentColor"/></svg><b>Wi-Fi</b> etkin ağ</span>
+            <span class="fact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Yöntem: <b>Otomatik · <span id="factProfile">Orta</span></b></span>
+            <span class="fact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>VPN yok, hız kaybı yok</span>
+          </div>
+          <div class="fixwrap">
+            <button class="fixbtn" id="fixBtn" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M5.6 5.6l3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/></svg>Bir site açılmıyor mu?</button>
+            <div class="pop" id="fixPop" hidden>
+              <div><h4 id="fixTitle">Bir site açılmıyor mu?</h4><p id="fixSub">Siteyi yaz ya da boş bırak. Listede yoksa eklerim, sonra yöntemleri sırayla deneyip açılanda dururum.</p></div>
+              <input id="fixInput" placeholder="Hangi site? Örnek: discord.com (boş bırakabilirsin)" autocomplete="off" aria-label="Açılmayan site">
+              <div class="ladder" id="ladder"></div>
+              <div class="pop-actions" id="fixActions"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="body">
+        <div class="col stretch">
+          <section class="card" aria-labelledby="sitesH">
+            <div class="card-h"><h3 id="sitesH">Engelli siteler ve uygulamalar</h3><span class="sub" id="siteCount">16 alan adı</span></div>
+            <form class="add" id="addForm">
+              <input id="addInput" placeholder="site.com ya da tam adresi yapıştır" autocomplete="off" aria-label="Eklenecek site">
+              <button class="btn primary" type="submit">Ekle</button>
+            </form>
+            <div class="err" id="addErr" hidden></div>
+            <div class="groups" id="groups"></div>
+            <p class="sites-note">Discord gibi masaüstü uygulamaları da macOS'un bağlantı ayarını kullandığı için aynı listeyle açılır.</p>
+          </section>
+        </div>
+
+        <div class="col">
+          <section class="card" aria-labelledby="netH">
+            <div class="card-h"><h3 id="netH">Ağlar</h3><span class="sub">Ağ değişince kendiliğinden ayarlanır</span></div>
+            <div class="nets" id="nets"></div>
+          </section>
+
+          <section class="card" aria-labelledby="profH">
+            <div class="card-h"><h3 id="profH">Yöntem</h3><span class="sub">Otomatik</span></div>
+            <div class="method">
+              <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M15 9h0M17.8 6.2 19 5M3 21l9-9M12.2 6.2 11 5"/></svg></div>
+              <div><b>Şu an: <span id="profNow">Orta</span></b><span>Ağ değişince engelli siteleri dener, açılmazsa uygun yöntemi kendisi bulur.</span></div>
+            </div>
+            <p class="prof-desc" id="autoNote" style="min-height:0;margin:10px 0">Son kontrol: Wi-Fi ağına geçince, sorun yok.</p>
+            <div class="auto"><button class="btn" id="autoBtn">Şimdi yeniden bul</button><button class="linkbtn" id="advBtn" aria-expanded="false">Gelişmiş</button></div>
+            <div class="adv" id="adv" hidden>
+              <p>Yalnızca otomatik seçim işe yaramazsa elle değiştir. Hepsi sadece listedeki sitelere uygulanır.</p>
+              <div class="profiles" id="profiles"></div>
+              <p id="profDesc"></p>
+            </div>
+          </section>
+        </div>
+
+        <section class="card span2" aria-labelledby="testH">
+          <div class="card-h"><h3 id="testH">Canlı test</h3><button class="btn primary" id="testBtn">Testi başlat</button></div>
+          <div class="tests">
+            <div class="tcol"><h4>Engelli siteler · Geçit üzerinden</h4><div id="tBlocked"></div></div>
+            <div class="tcol"><h4>Normal siteler · doğrudan, dokunulmadan</h4><div id="tNormal"></div></div>
+          </div>
+          <div id="verdict" hidden></div>
+        </section>
+
+        <section class="card span2">
+          <details class="logs">
+            <summary>▸ Kayıtlar</summary>
+<pre>2026-10-10 09:12:03 PAC ayarlandı: Wi-Fi
+2026-10-10 09:12:03 SpoofDPI yeniden başlatıldı (profil: orta)
+2026-10-10 11:40:27 PAC ayarlandı: iPhone USB
+2026-10-10 11:40:28 PAC yenilendi</pre>
+          </details>
+        </section>
+      </div>
+    </div>
+
+    <div id="welcome" class="welcome" hidden>
+      <canvas id="welcomeCanvas" width="320" height="320" style="width:160px;height:160px"></canvas>
+      <h2>Engeller için bir geçit</h2>
+      <p>Geçit, Discord gibi engellenen siteleri VPN olmadan açar. Yalnızca listedeki sitelere dokunur; diğer her şey eskisi gibi kalır.</p>
+      <div class="steps">
+        <div class="step"><b>Bir kez kur</b><span>Mac şifren yalnızca kurulumda bir kez sorulur.</span></div>
+        <div class="step"><b>Unut gitsin</b><span>Açılışta kendiliğinden başlar, ağ değişince kendini ayarlar.</span></div>
+        <div class="step"><b>Hız aynı</b><span>Trafik başka sunucudan dolaşmaz, doğrudan siteye gider.</span></div>
+      </div>
+      <button class="bigbtn" id="installBtn">Geçit'i kur</button>
+    </div>
+  </section>
+
+  <aside class="side" aria-label="Menü çubuğu paneli">
+    <div class="menubar"><span>Cmt 10 Eki</span><span class="me" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 21V11a7 7 0 0 1 14 0v10"/><path d="M3 21h18"/><path id="mbPath" d="M12 21v-6"/></svg></span><span>14:32</span></div>
+    <div class="panel">
+      <div class="p-top">
+        <canvas id="miniCanvas" width="128" height="128"></canvas>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0">
+          <div style="min-width:0"><b id="pTitle">Geçit açık</b><span id="pSub">Wi-Fi · Orta yöntem</span></div>
+          <button class="toggle" id="pToggle" role="switch" aria-checked="true" aria-label="Geçit"></button>
+        </div>
+      </div>
+      <div class="p-list" id="pList"></div>
+      <form class="add" id="pAdd" style="margin:0">
+        <input id="pInput" placeholder="Hızlı site ekle" autocomplete="off" aria-label="Hızlı site ekle">
+      </form>
+      <div class="p-actions"><button class="btn" id="pFix">Açılmıyor mu?</button><button class="btn">Pencereyi aç</button></div>
+      <div class="p-foot"><span>Girişte açılır ✓</span><span>Çıkış</span></div>
+    </div>
+    <p class="caption">Menü çubuğundaki kemer simgesine tıklayınca açılan panel. Simge, geçit kapalıyken boş, açıkken içi dolu çizilir.</p>
+  </aside>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const state = {
+    mode: "active",
+    profile: "orta",
+    domains: ["discord.com","discord.gg","discord.co","discord.media","discord.dev","discord.new","discord.gift","discordapp.com","discordapp.net","discordcdn.com","discordstatus.com","dis.gd","roblox.com","rbxcdn.com","rbx.com","wattpad.com"],
+    fresh: null,
+  };
+  const PROFILES = {
+    hafif: { t: "Hafif", bars: 1, d: "İlk paketi site adından ikiye böler. En az müdahale, en hızlı yol." },
+    orta: { t: "Orta", bars: 2, d: "Böler ve parçaların sırasını karıştırır. Türkiye'deki çoğu ağda yeterli." },
+    guclu: { t: "Güçlü", bars: 3, d: "İlk paketi bayt bayt gönderir. Hiçbiri işe yaramazsa inatçı ağlar için." },
+  };
+  const FAMILIES = [
+    { n: "Discord", c: "#5865F2", m: d => /^(discord|dis\.gd)/.test(d) },
+    { n: "Roblox", c: "#3b3f45", m: d => /^(roblox|rbx)/.test(d) },
+    { n: "Wattpad", c: "#f25d22", m: d => /^wattpad/.test(d) },
+  ];
+  const hue = s => [...s].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 360, 7);
+  function groups() {
+    const out = new Map();
+    for (const d of state.domains) {
+      const f = FAMILIES.find(f => f.m(d));
+      const label = d.split(".").slice(-2)[0];
+      const name = f ? f.n : label.charAt(0).toLocaleUpperCase("tr") + label.slice(1);
+      if (!out.has(name)) out.set(name, { name, color: f ? f.c : `hsl(${hue(label)} 45% 42%)`, rank: f ? FAMILIES.indexOf(f) : 9, ds: [] });
+      out.get(name).ds.push(d);
+    }
+    return [...out.values()].sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name, "tr"));
+  }
+  const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  function renderSites() {
+    const gs = groups();
+    $("#siteCount").textContent = `${state.domains.length} alan adı`;
+    $("#groups").innerHTML = gs.map(g => `
+      <div class="group">
+        <div class="mono" style="background:${g.color}">${esc(g.name.charAt(0))}</div>
+        <div class="gname">${esc(g.name)} <span>${g.ds.length} alan adı</span>${g.name === "Discord" ? '<em class="appb"><i></i>Discord uygulaması da</em>' : ""}</div>
+        <div class="domains">${g.ds.map(d => `<span class="dom${d === state.fresh ? " new" : ""}">${esc(d)}<button aria-label="${esc(d)} sitesini çıkar" data-rm="${esc(d)}"><svg viewBox="0 0 12 12" width="9" height="9"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.6"/></svg></button></span>`).join("")}</div>
+      </div>`).join("");
+    renderPanel();
+  }
+  $("#groups").addEventListener("click", e => {
+    const b = e.target.closest("[data-rm]"); if (!b) return;
+    state.domains = state.domains.filter(d => d !== b.dataset.rm); state.fresh = null; renderSites(); renderHero();
+  });
+  function normalize(v) {
+    let d = v.trim().toLowerCase().replace(/^[a-z]*:\/\//, "").replace(/\/.*/, "").replace(/^\*\./, "").replace(/^www\./, "").replace(/^\./, "");
+    return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(d) ? d : null;
+  }
+  function add(v, errEl) {
+    const d = normalize(v);
+    if (errEl) errEl.hidden = true;
+    if (!d) { if (errEl) { errEl.textContent = "Bu bir site adı gibi görünmüyor. Örnek: twitch.tv"; errEl.hidden = false; } return false; }
+    if (state.domains.includes(d)) { if (errEl) { errEl.textContent = `${d} zaten listede.`; errEl.hidden = false; } return false; }
+    state.domains.push(d); state.domains.sort(); state.fresh = d; renderSites(); renderHero(); return true;
+  }
+  $("#addForm").addEventListener("submit", e => { e.preventDefault(); if (add($("#addInput").value, $("#addErr"))) $("#addInput").value = ""; });
+  $("#pAdd").addEventListener("submit", e => { e.preventDefault(); if (add($("#pInput").value)) $("#pInput").value = ""; });
+
+  const NETS = [
+    { n: "Wi-Fi", s: "Bağlı · etkin ağ", i: '<path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/>' },
+    { n: "iPhone USB", s: "Telefondan paylaşım", i: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>' },
+    { n: "Thunderbolt Ethernet", s: "Kablo takılı değil", i: '<path d="M4 8h16v9H4zM8 17v3M16 17v3M8 11h8"/>' },
+  ];
+  function renderNets() {
+    const m = state.mode;
+    $("#nets").innerHTML = NETS.map((n, i) => {
+      let pill = '<span class="pill ok">Hazır</span>';
+      if (m === "off") pill = '<span class="pill idle">Kapalı</span>';
+      if (m === "degraded" && i === 1) pill = '<span class="pill warn">Ayarlanıyor</span>';
+      return `<div class="net"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${n.i}</svg></div><div><div class="n">${n.n}</div><div class="s">${n.s}</div></div>${pill}</div>`;
+    }).join("");
+  }
+  function renderProfiles() {
+    $("#profiles").innerHTML = Object.entries(PROFILES).map(([k, p]) => `
+      <button class="prof" data-p="${k}" aria-pressed="${k === state.profile}">
+        <span class="bars">${[6, 10, 14].map((h, i) => `<i style="height:${h}px" class="${i < p.bars ? "on" : ""}"></i>`).join("")}</span>
+        <b>${p.t}</b></button>`).join("");
+    $("#profDesc").textContent = PROFILES[state.profile].d;
+    $("#factProfile").textContent = PROFILES[state.profile].t;
+    $("#profNow").textContent = PROFILES[state.profile].t;
+    renderPanel();
+  }
+  $("#profiles").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (b) { state.profile = b.dataset.p; renderProfiles(); } });
+  $("#autoBtn").addEventListener("click", async () => {
+    const note = $("#autoNote"), btn = $("#autoBtn"); btn.disabled = true;
+    for (const p of ["hafif", "orta"]) { note.textContent = `${PROFILES[p].t} yöntem deneniyor…`; state.profile = p; renderProfiles(); await wait(900); }
+    note.textContent = "Bu ağda Orta yöntem çalışıyor, o seçildi."; btn.disabled = false;
+  });
+  $("#advBtn").addEventListener("click", () => { const a = $("#adv"); a.hidden = !a.hidden; $("#advBtn").textContent = a.hidden ? "Gelişmiş" : "Gelişmişi gizle"; $("#advBtn").setAttribute("aria-expanded", String(!a.hidden)); });
+
+  /* ---------- "Bir site açılmıyor mu?" ---------- */
+  const ORDER = ["hafif", "orta", "guclu"];
+  const CHECK = '<svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+  const CROSS = '<svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="2"/></svg>';
+  const fx = { phase: "idle", trying: null, attempts: {}, site: "" };
+  function renderFix() {
+    $("#ladder").innerHTML = ORDER.map(p => {
+      let c = "";
+      if (fx.attempts[p] === true) c = "ok"; else if (fx.attempts[p] === false) c = "no";
+      else if (fx.trying === p) c = "try"; else if (fx.phase === "idle" && state.profile === p) c = "cur";
+      const inner = c === "ok" ? CHECK : c === "no" ? CROSS : "";
+      return `<div class="rung ${c}"><span class="n">${inner}</span>${PROFILES[p].t}</div>`;
+    }).join("");
+    const T = $("#fixTitle"), S = $("#fixSub"), A = $("#fixActions"), site = fx.site || "discord.com";
+    $("#fixInput").hidden = fx.phase !== "idle";
+    if (fx.phase === "idle") { T.textContent = "Bir site açılmıyor mu?"; S.textContent = "Siteyi yaz ya da boş bırak. Listede yoksa eklerim, sonra yöntemleri sırayla deneyip açılanda dururum."; A.innerHTML = '<button class="btn primary" id="fxGo">Düzelt</button>'; }
+    if (fx.phase === "adding") { T.textContent = `${site} listeye ekleniyor`; S.textContent = "Bu siteyi Geçit'ten geçirmeye başlıyorum."; A.innerHTML = '<span class="wait"><span class="spin"></span>Deneniyor, bir dakika sürebilir…</span>'; }
+    if (fx.phase === "trying") { T.textContent = `${PROFILES[fx.trying].t} yöntem deneniyor`; S.textContent = `Yöntemi değiştirip ${site} adresini gerçekten açmayı deniyorum.`; A.innerHTML = '<span class="wait"><span class="spin"></span>Deneniyor, bir dakika sürebilir…</span>'; }
+    if (fx.phase === "works") { T.textContent = `${site} şimdi açılıyor`; S.textContent = `${PROFILES[state.profile].t} yöntemle açıldı ve öyle kalacak. Tarayıcıda sekmeyi yenile; hâlâ açılmıyorsa sonrakine geçerim.`; A.innerHTML = '<button class="btn" id="fxNext">Hâlâ açılmıyor, sonrakini dene</button><button class="btn primary" id="fxOk">Tamam</button>'; }
+  }
+  async function runFix() {
+    const typed = $("#fixInput").value.trim();
+    fx.site = typed ? (normalize(typed) || typed) : "";
+    fx.attempts = {};
+    if (fx.site && !state.domains.some(d => fx.site === d || fx.site.endsWith("." + d))) { fx.phase = "adding"; renderFix(); await wait(900); add(fx.site); }
+    const i = ORDER.indexOf(state.profile);
+    const order = [1, 2, 3].map(k => ORDER[(i + k) % 3]);
+    let first = true;
+    for (const p of order) {
+      fx.phase = "trying"; fx.trying = p; renderFix(); await wait(1600);
+      const ok = !first;           // örnek: ilk denenen açmıyor, ikincisi açıyor
+      first = false;
+      fx.attempts[p] = ok;
+      if (ok) { fx.trying = null; state.profile = p; renderProfiles(); fx.phase = "works"; renderFix(); return; }
+      renderFix(); await wait(300);
+    }
+  }
+  function openFix(fromPanel) {
+    const pop = $("#fixPop"); pop.hidden = false; $("#fixBtn").setAttribute("aria-expanded", "true");
+    if (fromPanel) pop.scrollIntoView({ behavior: "smooth", block: "center" });
+    renderFix();
+  }
+  $("#fixBtn").addEventListener("click", () => { const pop = $("#fixPop"); if (pop.hidden) openFix(); else { pop.hidden = true; fx.phase = "idle"; fx.attempts = {}; $("#fixBtn").setAttribute("aria-expanded", "false"); } });
+  $("#fixActions").addEventListener("click", e => {
+    if (e.target.id === "fxGo") runFix();
+    if (e.target.id === "fxNext") { $("#fixInput").value = fx.site; runFix(); }
+    if (e.target.id === "fxOk") { fx.phase = "idle"; fx.attempts = {}; $("#fixPop").hidden = true; $("#fixBtn").setAttribute("aria-expanded", "false"); }
+  });
+  $("#fixInput").addEventListener("keydown", e => { if (e.key === "Enter") runFix(); });
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  /* ---------- live test ---------- */
+  const NORMAL = ["google.com", "youtube.com", "github.com", "eksisozluk.com", "trendyol.com", "turkiye.gov.tr"];
+  const sample = () => { const g = groups(); const s = g.map(x => x.ds[0]); for (const d of state.domains) if (s.length < 6 && !s.includes(d) && d !== "dis.gd") s.push(d); return s.slice(0, 6); };
+  const ok = '<svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
+  const no = '<svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.8"/></svg>';
+  const row = (h, k) => `<div class="trow" data-h="${esc(h)}"><span class="ico ${k}"></span><span class="h">${esc(h)}</span><span class="lat"><i></i></span><span class="ms">–</span></div>`;
+  function resetTests() {
+    $("#tBlocked").innerHTML = sample().map(h => row(h, "idle")).join("");
+    $("#tNormal").innerHTML = NORMAL.map(h => row(h, "idle")).join("");
+    $("#verdict").hidden = true;
+  }
+  let running = false;
+  async function runTests() {
+    if (running) return; running = true; $("#testBtn").disabled = true; $("#testBtn").textContent = "Deneniyor…";
+    resetTests();
+    const rows = [...document.querySelectorAll(".trow")];
+    rows.forEach(r => r.querySelector(".ico").className = "ico wait");
+    let fails = 0;
+    await Promise.all(rows.map(async (r, i) => {
+      const blocked = r.closest("#tBlocked") !== null;
+      const ms = blocked ? 70 + Math.round(Math.random() * 90) : 18 + Math.round(Math.random() * 60);
+      await wait(350 + i * 140 + ms * 3);
+      const fail = state.mode === "off" ? blocked : (state.mode === "degraded" && blocked && i === 1);
+      const ic = r.querySelector(".ico");
+      if (fail) { fails++; ic.className = "ico no"; ic.innerHTML = no; r.querySelector(".ms").textContent = "açılmadı"; }
+      else { ic.className = "ico ok"; ic.innerHTML = ok; r.querySelector(".ms").textContent = `${ms} ms`; r.querySelector(".lat i").style.width = Math.min(100, ms / 2) + "%"; }
+    }));
+    const v = $("#verdict"); v.hidden = false;
+    v.className = "verdict" + (fails ? " bad" : "");
+    v.textContent = fails
+      ? (state.mode === "off" ? "Geçit kapalıyken engelli siteler açılmıyor, normal siteler sorunsuz. Açmak için kemere tıkla." : "Bir site açılmadı. \"Bu ağ için otomatik bul\" daha güçlü bir yöntem seçebilir.")
+      : "Her şey yolunda: engelli siteler Geçit üzerinden, normal siteler doğrudan açılıyor.";
+    $("#testBtn").disabled = false; $("#testBtn").textContent = "Yeniden test et"; running = false;
+  }
+  $("#testBtn").addEventListener("click", runTests);
+  $("#pFix").addEventListener("click", () => { openFix(true); });
+
+  /* ---------- hero + panel text ---------- */
+  function renderHero() {
+    const m = state.mode, g = groups().map(x => x.name);
+    const names = g.length > 3 ? `${g.slice(0, 2).join(", ")} ve ${g.length - 2} site grubu daha` : g.length > 1 ? `${g.slice(0, -1).join(", ")} ve ${g[g.length - 1]}` : (g[0] || "Listedeki siteler");
+    const T = {
+      active: ["Etkin · açılışta kendiliğinden başlar", "Geçit açık", `${names} engelsiz açılıyor. Diğer bütün siteler hiç dokunulmadan, her zamanki bağlantınla açılır.`, "Kapatmak için tıkla", "var(--glow)"],
+      degraded: ["Dikkat · bir parça çalışmıyor", "Geçit toparlanıyor", "iPhone USB ağına yeni geçildi, ayarlar yapılıyor. Birkaç saniye sürmezse \"Testi başlat\" ile kontrol et.", "Kapatmak için tıkla", "#f0b443"],
+      off: ["Kapalı · elle kapatıldı", "Geçit kapalı", "Bütün siteler normal bağlantıyla açılıyor. Engelli siteler şu an açılmaz.", "Açmak için tıkla", "#7d8c87"],
+    }[m] || [];
+    if (!T.length) return;
+    $("#eyebrow").textContent = T[0]; $("#headline").textContent = T[1]; $("#lede").textContent = T[2]; $("#archHint").textContent = T[3];
+    $("#dot").style.background = T[4]; $("#dot").style.boxShadow = `0 0 0 4px color-mix(in srgb, ${T[4]} 25%, transparent)`;
+    renderPanel();
+  }
+  function renderPanel() {
+    const m = state.mode;
+    $("#pTitle").textContent = m === "off" ? "Geçit kapalı" : m === "degraded" ? "Toparlanıyor" : m === "install" ? "Kurulum gerekli" : "Geçit açık";
+    $("#pSub").textContent = `Wi-Fi · ${PROFILES[state.profile].t} yöntem`;
+    $("#pToggle").setAttribute("aria-checked", String(m === "active" || m === "degraded"));
+    $("#mbPath").setAttribute("d", m === "off" || m === "install" ? "M12 21v0" : "M9 21v-7h6v7");
+    $("#pList").innerHTML = groups().slice(0, 4).map(g => `<div class="p-item"><span>${esc(g.name)}</span><span>${m === "off" ? "engelli" : "açık"}</span></div>`).join("");
+  }
+  function setMode(m) {
+    state.mode = m;
+    document.querySelectorAll("#stateSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === m)));
+    $("#main").hidden = m === "install"; $("#welcome").hidden = m !== "install";
+    renderHero(); renderNets(); renderPanel(); resetTests();
+  }
+  $("#stateSeg").addEventListener("click", e => { const b = e.target.closest("[data-s]"); if (b) setMode(b.dataset.s); });
+  $("#arch").addEventListener("click", () => setMode(state.mode === "off" ? "active" : "off"));
+  $("#pToggle").addEventListener("click", () => setMode(state.mode === "off" ? "active" : "off"));
+  $("#installBtn").addEventListener("click", async () => { $("#installBtn").textContent = "Kuruluyor…"; await wait(1400); $("#installBtn").textContent = "Geçit'i kur"; setMode("active"); });
+
+  /* ---------- the arch (kemer): packets pass through when open ---------- */
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function makeArch(canvas, opts) {
+    const ctx = canvas.getContext("2d"), W = canvas.width, H = canvas.height, s = W / 400;
+    const parts = Array.from({ length: opts.n }, () => spawn(true));
+    let open = 1;
+    function spawn(initial) { return { x: (Math.random() - .5) * 120 * s, y: initial ? Math.random() * H : H + 10 * s, v: (0.6 + Math.random() * 1.2) * s, r: (1 + Math.random() * 1.8) * s, blocked: Math.random() < .5 }; }
+    function archPath(inset) {
+      const cx = W / 2, base = H * .82, w = (118 - inset) * s, top = H * .2 + inset * s;
+      ctx.beginPath(); ctx.moveTo(cx - w, base); ctx.lineTo(cx - w, top + w); ctx.arc(cx, top + w, w, Math.PI, 0); ctx.lineTo(cx + w, base);
+    }
+    function frame() {
+      const m = state.mode, target = (m === "off" || m === "install") ? 0 : 1;
+      open += (target - open) * .06;
+      const col = m === "degraded" ? [240, 180, 67] : [54, 224, 173];
+      ctx.clearRect(0, 0, W, H);
+      if (opts.bg) { ctx.fillStyle = "#0b1513"; ctx.fillRect(0, 0, W, H); }
+      // inner light
+      const g = ctx.createRadialGradient(W / 2, H * .62, 4 * s, W / 2, H * .55, 170 * s);
+      g.addColorStop(0, `rgba(${col},${.55 * open})`); g.addColorStop(1, "rgba(0,0,0,0)");
+      archPath(10); ctx.save(); ctx.clip(); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      // packets
+      for (const p of parts) {
+        p.y -= p.v * (0.25 + open);
+        const stopY = H * .82;
+        const a = Math.max(0, Math.min(1, (stopY - p.y) / (40 * s)));
+        ctx.fillStyle = `rgba(${col},${(.25 + .75 * open) * a})`;
+        ctx.beginPath(); ctx.arc(W / 2 + p.x, p.y, p.r, 0, 7); ctx.fill();
+        if (p.y < H * .15) Object.assign(p, spawn(false));
+      }
+      ctx.restore();
+      // the arch stroke
+      ctx.lineWidth = 9 * s; ctx.lineCap = "round";
+      const sg = ctx.createLinearGradient(0, H * .2, 0, H * .82);
+      sg.addColorStop(0, `rgba(${col},${.35 + .65 * open})`); sg.addColorStop(1, `rgba(${col},${.08 + .25 * open})`);
+      ctx.strokeStyle = open > .02 ? sg : "rgba(125,140,135,.6)";
+      ctx.shadowColor = `rgba(${col},${.8 * open})`; ctx.shadowBlur = 26 * s * open;
+      archPath(0); ctx.stroke(); ctx.shadowBlur = 0;
+      // closed: a bar across
+      if (open < .98) {
+        ctx.strokeStyle = `rgba(150,165,160,${1 - open})`; ctx.lineWidth = 6 * s;
+        ctx.beginPath(); ctx.moveTo(W / 2 - 92 * s, H * .58); ctx.lineTo(W / 2 + 92 * s, H * .58); ctx.stroke();
+      }
+      // ground line
+      ctx.strokeStyle = `rgba(${col},.18)`; ctx.lineWidth = 2 * s;
+      ctx.beginPath(); ctx.moveTo(W * .12, H * .82); ctx.lineTo(W * .88, H * .82); ctx.stroke();
+      if (!reduce) requestAnimationFrame(frame);
+    }
+    frame();
+  }
+  makeArch($("#archCanvas"), { n: 46 });
+  makeArch($("#miniCanvas"), { n: 14, bg: true });
+  makeArch($("#welcomeCanvas"), { n: 30 });
+
+  renderSites(); renderProfiles(); setMode("active");
+})();
+</script>

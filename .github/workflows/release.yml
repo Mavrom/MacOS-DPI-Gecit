@@ -1,0 +1,60 @@
+# GitHub'a taşınınca .github/workflows/release.yml olarak konur.
+# Her push'ta macOS'ta derler ve testleri çalıştırır; "v*" etiketinde .pkg üretip Release'e ekler.
+name: derle-ve-yayinla
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+permissions:
+  contents: write
+jobs:
+  mac:
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kabuk betikleri sözdizimi
+        run: for f in ../kur.sh ../kaldir.sh ../lib/*.sh ../lib/macdpi build.sh paketle.sh paket/scripts/*; do sh -n "$f"; done
+      - name: Birim testleri
+        run: swift test
+      - name: Paket
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then SURUM="${GITHUB_REF_NAME#v}"; else SURUM=0.0.0; fi
+          SURUM="$SURUM" ./paketle.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Gecit-pkg
+          path: app/build/*.pkg
+      - name: Paketi gerçekten kur (kullanıcının yapacağı gibi)
+        run: |
+          sudo installer -pkg build/Gecit-*.pkg -target /
+          sudo cat /var/log/gecit-kurulum.log || true
+          test -x "/Applications/Geçit.app/Contents/MacOS/Gecit"
+          sleep 10
+          nc -z 127.0.0.1 18080
+          curl -fsS http://127.0.0.1:18079/proxy.pac | grep -q '"discord.com"'
+          macdpi durum --json | python3 -m json.tool
+          pgrep -x Gecit || open -a "/Applications/Geçit.app" --args --ilk
+      - name: Arayüzün ekran görüntüsü
+        continue-on-error: true
+        run: |
+          sleep 15
+          pgrep -x Gecit
+          screencapture -x /tmp/gecit-ekran.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Gecit-ekran
+          path: /tmp/gecit-ekran.png
+          if-no-files-found: ignore
+      - name: Kaldır
+        if: always()
+        run: sudo sh ../kaldir.sh || true
+      - name: Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" build/*.pkg --title "Geçit $GITHUB_REF_NAME" --notes-file ../README.md

@@ -1,0 +1,131 @@
+#!/bin/sh
+# macdpi: macOS için seçici DPI aşma aracı (SpoofDPI tabanlı).
+. /usr/local/macdpi/lib/common.sh
+PATH=/usr/bin:/bin:/usr/sbin:/sbin; export PATH
+
+PROXY="http://127.0.0.1:$PROXY_PORT"
+NORMAL_SITES="google.com youtube.com apple.com github.com eksisozluk.com trendyol.com hepsiburada.com sahibinden.com turkiye.gov.tr whatsapp.com instagram.com"
+
+yesil() { printf '\033[32m%s\033[0m' "$*"; }
+kirmizi() { printf '\033[31m%s\033[0m' "$*"; }
+
+# HTTPS el sıkışması tamamlanırsa (herhangi bir HTTP kodu) site açılıyor demektir.
+https_code() { # $1=site, $2=proxy ya da boş
+  if [ -n "$2" ]; then
+    curl -s -o /dev/null -w '%{http_code}' --max-time 10 -x "$2" "https://$1/" 2>/dev/null
+  else
+    curl -s -o /dev/null -w '%{http_code}' --max-time 10 "https://$1/" 2>/dev/null
+  fi
+}
+
+test_engelli() { # proxy üzerinden engelli siteleri dener; hepsi açılırsa 0 döner
+  fail=0
+  for s in ${1:-discord.com discord.gg discordapp.com}; do
+    c=$(https_code "$s" "$PROXY")
+    if [ "$c" != "000" ] && [ -n "$c" ]; then echo "  $(yesil AÇILIYOR)  $s"; else echo "  $(kirmizi AÇILMIYOR) $s"; fail=1; fi
+  done
+  return $fail
+}
+
+restart_wait() { # ajanın SpoofDPI'ı yeni profille yeniden başlatmasını bekle
+  want=$(shasum < "$CONFIG_FILE" | cut -d' ' -f1)
+  i=0; while [ $i -lt 20 ]; do [ "$(cat "$MACDPI_VAR/config.sum" 2>/dev/null)" = "$want" ] && break; sleep 1; i=$((i+1)); done
+  i=0; while [ $i -lt 10 ]; do nc -z 127.0.0.1 $PROXY_PORT 2>/dev/null && return 0; sleep 1; i=$((i+1)); done
+  return 1
+}
+
+cmd=$1; [ $# -gt 0 ] && shift
+case "$cmd" in
+  durum|"")
+    if [ "$1" = "--json" ]; then
+      on=true; [ -f "$OFF_FLAG" ] && on=false
+      px=false; nc -z 127.0.0.1 $PROXY_PORT 2>/dev/null && px=true
+      pac=false; curl -s --max-time 3 "$PAC_URL" | grep -q FindProxyForURL && pac=true
+      svcs=$(network_services | while IFS= read -r svc; do
+        a=false; networksetup -getautoproxyurl "$svc" | grep -q "URL: $PAC_URL" && a=true
+        n=$(printf '%s' "$svc" | sed 's/\\/\\\\/g; s/"/\\"/g')
+        printf '{"ad":"%s","etkin":%s}\n' "$n" "$a"
+      done | paste -sd, -)
+      sites=$(clean_domains | sed 's/.*/"&"/' | paste -sd, -)
+      printf '{"acik":%s,"proxy":%s,"pac":%s,"profil":"%s","servisler":[%s],"siteler":[%s]}\n' \
+        "$on" "$px" "$pac" "$(current_profile)" "$svcs" "$sites"
+      exit 0
+    fi
+    echo "macdpi durumu"
+    if [ -f "$OFF_FLAG" ]; then echo "  Genel: $(kirmizi KAPALI) (açmak için: macdpi ac)"; else echo "  Genel: $(yesil AÇIK)"; fi
+    if nc -z 127.0.0.1 $PROXY_PORT 2>/dev/null; then echo "  SpoofDPI: $(yesil çalışıyor) (profil: $(current_profile))"; else echo "  SpoofDPI: $(kirmizi çalışmıyor) (macdpi log)"; fi
+    if curl -s --max-time 3 "$PAC_URL" | grep -q FindProxyForURL; then echo "  PAC: $(yesil çalışıyor)"; else echo "  PAC: $(kirmizi çalışmıyor)"; fi
+    echo "  Ağ servisleri:"
+    network_services | while IFS= read -r svc; do
+      if networksetup -getautoproxyurl "$svc" | grep -q "URL: $PAC_URL"; then echo "    $(yesil ✓) $svc"; else echo "    $(kirmizi ✗) $svc"; fi
+    done
+    echo "  Listede $(clean_domains | wc -l | tr -d ' ') site var (macdpi liste)"
+    ;;
+  ekle)
+    [ $# -gt 0 ] || { echo "Kullanım: macdpi ekle site.com [site2.com ...]"; exit 1; }
+    for s in "$@"; do
+      d=$(printf '%s\n' "$s" | tr 'A-Z' 'a-z' | sed -e 's#^[a-z]*://##' -e 's#/.*##' -e 's/^\*\.//' -e 's/^www\.//')
+      if clean_domains | grep -qx "$d"; then echo "Zaten listede: $d"
+      else { cat "$LIST_FILE"; echo; echo "$d"; } > "$LIST_FILE.tmp.$$" && chmod 644 "$LIST_FILE.tmp.$$" && mv "$LIST_FILE.tmp.$$" "$LIST_FILE"; echo "Eklendi: $d"; fi
+    done
+    echo "Birkaç saniye içinde etkin olur (tarayıcıda sekmeyi yenile)."
+    ;;
+  cikar|çıkar)
+    [ $# -gt 0 ] || { echo "Kullanım: macdpi cikar site.com"; exit 1; }
+    for s in "$@"; do
+      d=$(printf '%s\n' "$s" | tr 'A-Z' 'a-z' | sed -e 's#^[a-z]*://##' -e 's#/.*##' -e 's/^\*\.//')
+      grep -vix -e "$d" -e "\*\.$d" "$LIST_FILE" > "$LIST_FILE.tmp.$$"; chmod 644 "$LIST_FILE.tmp.$$"; mv "$LIST_FILE.tmp.$$" "$LIST_FILE"
+      echo "Çıkarıldı: $d"
+    done
+    ;;
+  liste) clean_domains ;;
+  profil)
+    if [ -z "$1" ]; then echo "Şu anki profil: $(current_profile)  (seçenekler: hafif, orta, guclu)"; exit 0; fi
+    write_config "$1" || { echo "Bilinmeyen profil: $1 (hafif, orta, guclu)"; exit 1; }
+    echo "Profil: $1. SpoofDPI yeniden başlatılıyor..."
+    restart_wait && test_engelli
+    ;;
+  otoayar)
+    echo "Bu ağda çalışan en hafif yöntemi arıyorum..."
+    for p in hafif orta guclu; do
+      echo "Deneniyor: $p"
+      write_config "$p"; restart_wait
+      if test_engelli; then echo "$(yesil Seçildi:) $p"; exit 0; fi
+    done
+    write_config orta
+    echo "$(kirmizi 'Hiçbir profil çalışmadı.') 'orta' profiline dönüldü. 'macdpi log' çıktısını gönderin."
+    exit 1
+    ;;
+  test)
+    echo "1) Engelli siteler, normal bağlantıyla (engel gerçekten var mı?):"
+    for s in discord.com discord.gg; do
+      c=$(https_code "$s"); if [ "$c" != "000" ]; then echo "  açılıyor   $s (bu ağda engel yok)"; else echo "  engelli    $s"; fi
+    done
+    echo "2) Engelli siteler, macdpi üzerinden:"
+    test_engelli "$(clean_domains | grep -v -e '^dis.gd$' | head -n 6 | tr '\n' ' ')"
+    echo "3) Normal siteler (macdpi'a hiç uğramadan, doğrudan):"
+    for s in $NORMAL_SITES; do
+      c=$(https_code "$s")
+      if [ "$c" != "000" ]; then echo "  $(yesil AÇILIYOR)  $s"; else echo "  $(kirmizi AÇILMIYOR) $s"; fi
+    done
+    ;;
+  kapat) touch "$OFF_FLAG"; echo "macdpi kapatıldı. Tüm siteler normal bağlantıyla açılır. Açmak için: macdpi ac" ;;
+  ac|aç) rm -f "$OFF_FLAG"; echo "macdpi açıldı." ;;
+  log) tail -n 40 "$MACDPI_LOG/spoofdpi.log" 2>/dev/null; echo "---"; tail -n 20 "$MACDPI_LOG/agent.log" 2>/dev/null ;;
+  kaldir|kaldır) exec sudo /bin/sh "$MACDPI_LIB/kaldir.sh" ;;
+  *)
+    cat <<USAGE
+Kullanım: macdpi <komut>
+  durum           Çalışıyor mu, hangi ağlarda etkin
+  test            Engelli ve normal siteleri dener
+  ekle site.com   Engelli listesine site ekler
+  cikar site.com  Listeden çıkarır
+  liste           Listeyi gösterir
+  profil [ad]     Yöntemi gösterir/değiştirir: hafif, orta, guclu
+  otoayar         Bu ağda çalışan en hafif yöntemi kendisi seçer
+  kapat / ac      Geçici olarak kapatır / açar
+  log             Son kayıtlar
+  kaldir          Tamamen kaldırır
+USAGE
+    ;;
+esac

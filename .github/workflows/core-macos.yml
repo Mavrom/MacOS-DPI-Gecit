@@ -1,0 +1,84 @@
+name: core-macos
+
+# macdpi çekirdeğini gerçek macOS makinelerinde kurar, dener ve kaldırır.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  core:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Kur
+        run: sudo sh kur.sh --sessiz --kullanici "$USER"
+
+      - name: Servisler ayakta
+        run: |
+          sleep 8
+          for l in com.macdpi.spoofdpi com.macdpi.pac com.macdpi.agent; do
+            sudo launchctl print system/$l | head -5
+          done
+          nc -z 127.0.0.1 18080
+          curl -fsS http://127.0.0.1:18079/proxy.pac | tee /tmp/pac.js
+          grep -q '"discord.com"' /tmp/pac.js
+          macdpi durum
+          macdpi durum --json | python3 -m json.tool
+
+      - name: PAC her ağ servisinde
+        run: |
+          networksetup -listallnetworkservices | sed 1d | grep -v '^\*' | while IFS= read -r s; do
+            echo "== $s"; networksetup -getautoproxyurl "$s"
+            networksetup -getautoproxyurl "$s" | grep -q 'URL: http://127.0.0.1:18079/proxy.pac'
+          done
+
+      - name: Her profil proxy üzerinden HTTPS açıyor
+        run: |
+          for p in hafif orta guclu; do
+            macdpi profil $p
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 -x http://127.0.0.1:18080 https://discord.com/)
+            echo "$p -> $code"; [ "$code" != "000" ]
+          done
+          macdpi otoayar
+
+      - name: Normal siteler doğrudan açılıyor
+        run: macdpi test
+
+      - name: Liste ekle/çıkar ve kapat/aç PAC'a yansıyor
+        run: |
+          macdpi ekle Example.ORG
+          sleep 6; curl -fsS http://127.0.0.1:18079/proxy.pac | grep -q '"example.org"'
+          macdpi cikar example.org
+          sleep 6; if curl -fsS http://127.0.0.1:18079/proxy.pac | grep -q '"example.org"'; then exit 1; fi
+          macdpi kapat
+          sleep 6; curl -fsS http://127.0.0.1:18079/proxy.pac | grep -q 'return "DIRECT"; }'
+          macdpi ac
+          sleep 6; curl -fsS http://127.0.0.1:18079/proxy.pac | grep -q '"discord.com"'
+
+      - name: SpoofDPI çökerse kendiliğinden kalkıyor
+        run: |
+          sudo pkill -9 -f /usr/local/macdpi/bin/spoofdpi
+          for i in $(seq 1 20); do nc -z 127.0.0.1 18080 && exit 0; sleep 1; done
+          exit 1
+
+      - name: Kayıtlar
+        if: always()
+        run: |
+          macdpi log || true
+          sudo cat /usr/local/macdpi/log/agent.log || true
+
+      - name: Kaldır ve temizliği doğrula
+        run: |
+          sudo sh kaldir.sh
+          if sudo launchctl print system/com.macdpi.spoofdpi >/dev/null 2>&1; then exit 1; fi
+          if nc -z 127.0.0.1 18080; then exit 1; fi
+          test ! -e /usr/local/macdpi
+          networksetup -listallnetworkservices | sed 1d | grep -v '^\*' | while IFS= read -r s; do
+            if networksetup -getautoproxyurl "$s" | grep -q 'Enabled: Yes'; then exit 1; fi
+          done
