@@ -82,9 +82,9 @@ case "$cmd" in
   profil)
     if [ -z "$1" ]; then echo "Şu anki profil: $(current_profile)  (seçenekler: hafif, orta, guclu)"; exit 0; fi
     write_config "$1" || { echo "Bilinmeyen profil: $1 (hafif, orta, guclu)"; exit 1; }
-    remember_profile "$1"
     echo "Profil: $1. SpoofDPI yeniden başlatılıyor..."
-    restart_wait && test_engelli
+    # Yalnızca çalışan yöntem bu ağ için hatırlansın (denenip tutmayan değil).
+    restart_wait && test_engelli && remember_profile "$1"
     ;;
   otoayar)
     echo "Bu ağda çalışan en hafif yöntemi arıyorum..."

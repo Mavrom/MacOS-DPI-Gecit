@@ -81,6 +81,7 @@ final class AppModel: ObservableObject {
     private let runner = ProcessRunner()
     private var timer: Timer?
     private var lastNetwork: String?
+    private var networkPending = false
     private var healing = false
     private var ticking = false
 
@@ -138,11 +139,17 @@ final class AppModel: ObservableObject {
 
         // Ağ değişti (aynı Wi-Fi servisinde başka bir modem ya da telefon paylaşımı da sayılır):
         // o ağın yöntemine geç.
-        if let network, let networkKey, networkKey != lastNetwork {
-            let first = lastNetwork == nil
-            lastNetwork = networkKey
-            // Beklemeden: ayar saniyeler sürer, refresh'i bekleyenleri tutmasın.
-            if !first { Task { await networkChanged(network) } }
+        if let network, let networkKey, networkKey != lastNetwork, !networkPending {
+            if lastNetwork == nil {
+                lastNetwork = networkKey // açılışta ilk görülen ağ: yapılacak bir şey yok
+            } else {
+                // Beklemeden: ayar saniyeler sürer, refresh'i bekleyenleri tutmasın.
+                networkPending = true
+                Task {
+                    await networkChanged(network, key: networkKey)
+                    networkPending = false
+                }
+            }
         }
     }
 
@@ -198,10 +205,12 @@ final class AppModel: ObservableObject {
 
     /// Ağ değişti: bu ağda daha önce seçilen yöntemi kullan, yoksa en hafiften başlayıp ara.
     /// Böylece telefon paylaşımında gereken güçlü yöntem, evdeki ağda gereksiz yere kalmaz.
-    func networkChanged(_ name: String) async {
-        guard busy == nil, status.installed, status.enabled else { return }
+    func networkChanged(_ name: String, key: String) async {
         try? await Task.sleep(nanoseconds: 4_000_000_000) // ajan yeni ağı ayarlasın
-        guard busy == nil, status.enabled else { return }
+        // Başka bir işlem sürüyorsa ağı "işlendi" sayma: sonraki yenilemede yeniden denenir.
+        guard busy == nil else { return }
+        lastNetwork = key
+        guard status.installed, status.enabled else { return }
         busy = .tuning
         tuneNote = "\(name) ağına geçildi, bu ağın yöntemi ayarlanıyor…"
         runTune(cli.networkChanged())
