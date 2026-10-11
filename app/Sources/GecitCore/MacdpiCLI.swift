@@ -32,6 +32,11 @@ public struct MacdpiCLI: Sendable {
         runner.stream(exe, ["otoayar"])
     }
 
+    /// Ağ değişince: bu ağ için kayıtlı yöntemi kullanır, bilinmeyen ağda `otoayar` çalışır.
+    public func networkChanged() -> AsyncStream<String> {
+        runner.stream(exe, ["ag"])
+    }
+
     /// otoayar çıktısındaki "Seçildi: <profil>" satırını çözer; yoksa nil.
     public static func chosenProfile(fromAutoTuneLine line: String) -> Profile? {
         let clean = ANSI.strip(line)

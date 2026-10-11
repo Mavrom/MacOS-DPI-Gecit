@@ -72,6 +72,25 @@ CONF
   printf '%s\n' "$1" > "$PROFILE_FILE"
 }
 
+# Ağ başına seçilen yöntem burada tutulur: evde hafif çalışıyorsa, telefon paylaşımında
+# güçlü gerekse bile eve dönünce yine hafif kullanılsın.
+NETS_DIR="$MACDPI_ETC/aglar"
+
+# Bulunulan ağın kısa kimliği: varsayılan arayüz + ağ geçidi + geçidin MAC adresi.
+network_id() {
+  r=$(route -n get default 2>/dev/null) || return 0
+  gw=$(printf '%s\n' "$r" | awk '/gateway:/ {print $2}')
+  [ -n "$gw" ] || return 0
+  ifc=$(printf '%s\n' "$r" | awk '/interface:/ {print $2}')
+  mac=$(arp -n "$gw" 2>/dev/null | awk '{print $4}')
+  printf '%s %s %s' "$ifc" "$gw" "$mac" | shasum | cut -c1-12
+}
+
+remember_profile() { # bu ağda $1 yöntemi çalışıyor
+  id=$(network_id); [ -n "$id" ] || return 0
+  mkdir -p "$NETS_DIR" && printf '%s\n' "$1" > "$NETS_DIR/$id"
+}
+
 current_profile() {
   if [ -f "$PROFILE_FILE" ]; then cat "$PROFILE_FILE"; else echo orta; fi
 }
