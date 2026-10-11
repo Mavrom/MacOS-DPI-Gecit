@@ -29,7 +29,12 @@ test_engelli() { # proxy üzerinden engelli siteleri dener; hepsi açılırsa 0 
 
 restart_wait() { # ajanın SpoofDPI'ı yeni profille yeniden başlatmasını bekle
   want=$(shasum < "$CONFIG_FILE" | cut -d' ' -f1)
-  i=0; while [ $i -lt 20 ]; do [ "$(cat "$MACDPI_VAR/config.sum" 2>/dev/null)" = "$want" ] && break; sleep 1; i=$((i+1)); done
+  i=0; while [ $i -lt 20 ]; do
+    [ "$(cat "$MACDPI_VAR/config.sum" 2>/dev/null)" = "$want" ] && break
+    # Ajan yazma sırasında çalışıp değişikliği kaçırdıysa klasörü dürterek yeniden tetikle.
+    case $i in 4|10) : > "$MACDPI_ETC/.durt" && rm -f "$MACDPI_ETC/.durt" ;; esac
+    sleep 1; i=$((i+1))
+  done
   i=0; while [ $i -lt 10 ]; do nc -z 127.0.0.1 $PROXY_PORT 2>/dev/null && return 0; sleep 1; i=$((i+1)); done
   return 1
 }
