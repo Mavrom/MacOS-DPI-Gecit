@@ -2,6 +2,12 @@
 
 VPN değil. Yalnızca engelli listedeki siteler (Discord, Roblox, Wattpad ve senin eklediklerin) yerel SpoofDPI'dan geçer, diğer bütün siteler hiç dokunulmadan açılır. Açılışta kendiliğinden başlar, Wi-Fi, ev modemi ve telefon paylaşımında kendini ayarlar.
 
+### 1.0.4'de değişenler
+- **Discord uygulaması artık açılıyor.** Testler yeşil görünürken uygulamanın açılmamasının sebebi, Discord'un güncelleyicisinin sistemin proxy ayarını dinlemeyip doğrudan bağlanmasıydı; engele takılıp "Güncelleme başarısız"da kalıyordu. Geçit artık Discord'u (Dock'tan, girişte ya da güncelleme sonrası nasıl açılırsa açılsın) kendi yerel proxy'si verilerek yeniden açıyor. Elle yapman gereken bir şey yok. Terminalden: `macdpi discord`.
+- Yeni aşma tekniği: **TLS kaydı bölme**. İlk paket site adının ortasından iki ayrı TLS kaydına bölünüyor; Türkiye'de çalışan ByeDPI/SplitWire ayarlarının temel parçası. Hafif ve Orta yöntemleri artık bunu kullanıyor; Hafif hiç gecikme eklemiyor. SpoofDPI'da bu özellik yoktu; Geçit'in motoru artık yamalı SpoofDPI'dan kaynaktan derleniyor.
+- Discord'un kullandığı alan adı listesi genişletildi (dosya yüklemeleri, etkinlikler, mağaza vb.). Eski kurulumdaki listene eksikler eklenir, senin eklediklerine dokunulmaz.
+- Çok güçlü yöntemde sahte paket sayısı 3'ten 2'ye indi (bazı sunucular fazlasını reddediyor).
+
 ### 1.0.3'de değişenler
 - Telefon paylaşımı (Turkcell gibi mobil hatlar) için yeni en güçlü yöntem: **Çok güçlü**. Operatörün göreceği ama siteye ulaşmayan sahte bir ilk paket gönderir, sonra gerçeğini böler. Bekleme ya da yeniden gönderme yapmadığı için gecikme eklemez. Otomatik seçim bunu ancak hafif yöntemler o ağda çalışmazsa seçer.
 - Engelli sitelerin adresleri çözülürken bir DNS sunucusu hatta kapalıysa sıradakine geçiyor (Cloudflare, Google, Quad9). Mobil hatta bütün yöntemlerin birden başarısız olmasının olası nedenlerinden biri buydu.
@@ -18,7 +24,7 @@ VPN değil. Yalnızca engelli listedeki siteler (Discord, Roblox, Wattpad ve sen
 Eski sürüm kuruluysa yeni paketi kurman yeterli. Sonra Geçit'te "Şimdi yeniden bul"a bas ki yöntem yeniden seçilsin.
 
 ### Kurulum
-1. Aşağıdan `Gecit-1.0.3.pkg` dosyasını indir ve çift tıkla. Şifren bir kez sorulur.
+1. Aşağıdan `Gecit-1.0.4.pkg` dosyasını indir ve çift tıkla. Şifren bir kez sorulur.
 2. Paket imzasız olduğu için macOS uyarı verirse: Sistem Ayarları > Gizlilik ve Güvenlik > "Yine de Aç".
 3. Kurulum bitince Geçit açılır ve bulunduğun ağa uygun yöntemi kendisi seçer. Tarayıcıyı ve Discord'u bir kez kapatıp aç.
 

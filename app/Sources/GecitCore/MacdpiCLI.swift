@@ -37,6 +37,11 @@ public struct MacdpiCLI: Sendable {
         runner.stream(exe, ["ag"])
     }
 
+    /// Discord uygulamasını Geçit'in yerel proxy'siyle (yeniden) açar; güncelleyicisi PAC'ı dinlemez.
+    public func launchDiscord(restart: Bool) async -> CommandResult {
+        await runner.run(exe, restart ? ["discord", "--yeniden"] : ["discord"])
+    }
+
     /// otoayar çıktısındaki "Seçildi: <profil>" satırını çözer; yoksa nil.
     public static func chosenProfile(fromAutoTuneLine line: String) -> Profile? {
         let clean = ANSI.strip(line)

@@ -33,25 +33,30 @@ clean_domains() {
     | sort -u
 }
 
-# Profil adına göre SpoofDPI ayar dosyasını yazar.
-#   hafif : ClientHello'yu SNI'dan böler
-#   orta  : SNI'dan böler + parçaların sırasını bozar (varsayılan)
-#   guclu : ClientHello'yu 1 baytlık parçalara böler
-#   cokguclu : önce operatörün göreceği ama siteye ulaşmayan (düşük TTL) sahte bir ilk
-#              paket, sonra SNI'dan bölünmüş gerçeği. Paketleri ağ kartına doğrudan
-#              yazdığı için SpoofDPI'ın root çalışmasını gerektirir (ajan ayarlar).
+# Profil adına göre SpoofDPI ayar dosyasını yazar. Hepsi yalnızca listedeki sitelerin ilk
+# paketine (ClientHello) uygulanır; normal sitelere hiç dokunulmaz.
+#   hafif    : ClientHello site adının ortasından iki TLS kaydına bölünür, her kayıt ayrı
+#              pakette gider. Bekleme yok, gecikme eklemez.
+#   orta     : hafif + ilk parça sırası bozularak gönderilir (TTL 1, yeniden gönderilir).
+#   guclu    : ClientHello 1 baytlık paketlerle gönderilir.
+#   cokguclu : önce operatörün göreceği ama siteye ulaşmayan (düşük TTL) sahte ilk paketler,
+#              sonra kayıtlara bölünmüş gerçeği. Paketleri ağ kartına doğrudan yazdığı için
+#              SpoofDPI'ın root çalışmasını gerektirir (ajan ayarlar).
 write_config() {
   case "$1" in
     hafif) https='split-mode = "sni"
-disorder = false' ;;
+disorder = false
+tls-record-split = true' ;;
     orta)  https='split-mode = "sni"
-disorder = true' ;;
+disorder = true
+tls-record-split = true' ;;
     guclu) https='split-mode = "chunk"
 chunk-size = 1
 disorder = false' ;;
     cokguclu) https='split-mode = "sni"
 disorder = false
-fake-count = 3' ;;
+tls-record-split = true
+fake-count = 2' ;;
     *) return 1 ;;
   esac
   doh=$(pick_doh)

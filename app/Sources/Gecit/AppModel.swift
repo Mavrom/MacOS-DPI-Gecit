@@ -100,7 +100,10 @@ final class AppModel: ObservableObject {
         }
         refreshApps()
         schedule()
-        Task { await refresh() }
+        Task {
+            await refresh()
+            DiscordGuard.shared.start()
+        }
 
         // Uykudan uyanınca ve 15 dakikada bir sessizce kontrol et.
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { _ in

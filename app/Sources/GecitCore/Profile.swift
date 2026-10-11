@@ -16,8 +16,8 @@ public enum Profile: String, CaseIterable, Identifiable, Sendable {
 
     public var detail: String {
         switch self {
-        case .hafif: return "İlk paketi site adından ikiye böler. En az müdahale."
-        case .orta: return "Böler ve parçaların sırasını karıştırır. Çoğu ağda yeterli."
+        case .hafif: return "İlk paketi site adının ortasından iki TLS kaydına böler. Gecikme eklemez."
+        case .orta: return "Kayıtlara böler ve parçaların sırasını karıştırır. İnatçı ağlar için."
         case .guclu: return "İlk paketi bayt bayt gönderir. İnatçı ağlar için."
         case .cokguclu: return "Önce operatörün göreceği sahte bir ilk paket, sonra gerçeğini bölerek gönderir. Mobil hat gibi en inatçı ağlar için."
         }

@@ -142,6 +142,34 @@ case "$cmd" in
       if [ "$c" != "000" ]; then echo "  $(yesil AÇILIYOR)  $s"; else echo "  $(kirmizi AÇILMIYOR) $s"; fi
     done
     ;;
+  discord)
+    # Discord masaüstü uygulamasının güncelleyicisi sistem proxy'sini (PAC) dinlemez: doğrudan
+    # bağlanınca engele takılır, uygulama "Güncelleme başarısız"/"Başlatılıyor"da kalır. Burada
+    # Discord, Geçit'in yerel proxy'si ortam değişkeni ve Chromium bayrağıyla verilerek açılır.
+    app=""
+    for a in "/Applications/Discord.app" "$HOME/Applications/Discord.app" "/Applications/Discord PTB.app" "/Applications/Discord Canary.app"; do
+      [ -d "$a" ] && { app=$a; break; }
+    done
+    [ -n "$app" ] || { echo "Discord uygulaması bulunamadı (/Applications/Discord.app)."; exit 1; }
+    exe="$app/Contents/MacOS/$(defaults read "$app/Contents/Info" CFBundleExecutable 2>/dev/null || basename "$app" .app)"
+    if pgrep -f "$exe" >/dev/null 2>&1; then
+      if [ "$1" != "--yeniden" ] && pgrep -f "$exe.*--proxy-server=$PROXY" >/dev/null 2>&1; then
+        echo "Discord zaten Geçit üzerinden açık."; exit 0
+      fi
+      echo "Discord kapatılıyor..."
+      osascript -e "quit app \"$app\"" >/dev/null 2>&1
+      i=0; while pgrep -f "$exe" >/dev/null 2>&1 && [ $i -lt 20 ]; do sleep 0.5; i=$((i+1)); done
+      pkill -f "$exe" 2>/dev/null; sleep 0.5
+    fi
+    echo "Discord Geçit üzerinden açılıyor: $app"
+    if ! open -n -a "$app" --env "HTTPS_PROXY=$PROXY" --env "HTTP_PROXY=$PROXY" \
+         --env "https_proxy=$PROXY" --env "http_proxy=$PROXY" --env "NO_PROXY=localhost,127.0.0.1,::1" \
+         --args "--proxy-server=$PROXY" 2>/dev/null; then
+      # Eski macOS'ta "open --env" yok: uygulamayı doğrudan başlat.
+      HTTPS_PROXY=$PROXY HTTP_PROXY=$PROXY https_proxy=$PROXY http_proxy=$PROXY NO_PROXY=localhost,127.0.0.1,::1 \
+        nohup "$exe" "--proxy-server=$PROXY" >/dev/null 2>&1 &
+    fi
+    ;;
   kapat) touch "$OFF_FLAG"; echo "macdpi kapatıldı. Tüm siteler normal bağlantıyla açılır. Açmak için: macdpi ac" ;;
   ac|aç) rm -f "$OFF_FLAG"; echo "macdpi açıldı." ;;
   log) tail -n 40 "$MACDPI_LOG/spoofdpi.log" 2>/dev/null; echo "---"; tail -n 20 "$MACDPI_LOG/agent.log" 2>/dev/null ;;
@@ -157,6 +185,7 @@ Kullanım: macdpi <komut>
   profil [ad]     Yöntemi gösterir/değiştirir: hafif, orta, guclu, cokguclu
   otoayar         Bu ağda çalışan en hafif yöntemi kendisi seçer
   ag              Ağ değişince: bu ağın kayıtlı yöntemini kullanır, yoksa otoayar
+  discord         Discord uygulamasını Geçit üzerinden (yeniden) açar
   kapat / ac      Geçici olarak kapatır / açar
   log             Son kayıtlar
   kaldir          Tamamen kaldırır

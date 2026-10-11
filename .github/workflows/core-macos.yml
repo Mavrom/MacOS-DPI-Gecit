@@ -50,6 +50,7 @@ jobs:
         run: |
           spoof_user() { ps -o user= -p "$(pgrep -f /usr/local/macdpi/bin/spoofdpi | head -1)" | tr -d ' '; }
           grep https-url /usr/local/macdpi/etc/spoofdpi.toml
+          /usr/local/macdpi/bin/spoofdpi --version
           for p in hafif orta guclu cokguclu; do
             macdpi profil $p
             code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 -x http://127.0.0.1:18080 https://discord.com/)
@@ -57,6 +58,7 @@ jobs:
           done
           # Sahte paket yöntemi root ister; diğerleri yetkisiz kullanıcıya döner
           [ "$(spoof_user)" = root ]
+          grep -q 'tls-record-split = true' /usr/local/macdpi/etc/spoofdpi.toml
           macdpi profil hafif
           sleep 2; [ "$(spoof_user)" = nobody ]
           macdpi otoayar
@@ -65,6 +67,36 @@ jobs:
           macdpi ag | tee /tmp/ag.txt
           grep -q "kayıtlı yöntem" /tmp/ag.txt
           grep -q "Seçildi" /tmp/ag.txt
+
+      - name: Discord uygulaması Geçit'in proxy'siyle açılıyor
+        run: |
+          # Sahte bir Discord.app: aldığı ortamı ve argümanları dosyaya yazar.
+          A=/Applications/Discord.app/Contents
+          sudo mkdir -p "$A/MacOS"
+          sudo tee "$A/Info.plist" >/dev/null <<'PL'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>CFBundleExecutable</key><string>Discord</string>
+            <key>CFBundleIdentifier</key><string>com.hnc.Discord</string>
+            <key>CFBundleName</key><string>Discord</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+          </dict></plist>
+          PL
+          printf '#!/bin/sh\nenv > /tmp/discord-env.txt\necho "ARGS $*" >> /tmp/discord-env.txt\nwhile :; do sleep 1; done\n' | sudo tee "$A/MacOS/Discord" >/dev/null
+          sudo chmod 755 "$A/MacOS/Discord"; sudo chown -R "$USER" /Applications/Discord.app
+          macdpi discord
+          for i in $(seq 1 20); do [ -s /tmp/discord-env.txt ] && grep -q ARGS /tmp/discord-env.txt && break; sleep 1; done
+          cat /tmp/discord-env.txt | grep -i -e proxy -e ARGS
+          grep -q '^HTTPS_PROXY=http://127.0.0.1:18080$' /tmp/discord-env.txt
+          grep -q 'ARGS --proxy-server=http://127.0.0.1:18080' /tmp/discord-env.txt
+          macdpi discord | grep -q "zaten"
+          rm -f /tmp/discord-env.txt
+          macdpi discord --yeniden
+          for i in $(seq 1 20); do [ -s /tmp/discord-env.txt ] && grep -q ARGS /tmp/discord-env.txt && break; sleep 1; done
+          grep -q '^https_proxy=http://127.0.0.1:18080$' /tmp/discord-env.txt
+          pkill -f /Applications/Discord.app/Contents/MacOS/Discord || true
+          sudo rm -rf /Applications/Discord.app
 
       - name: Normal siteler doğrudan açılıyor
         run: macdpi test

@@ -61,8 +61,16 @@ for f in common.sh agent.sh pac-serve.sh macdpi; do install -m 755 "$SRC/lib/$f"
 install -m 755 "$SRC/kaldir.sh" "$MACDPI_LIB/kaldir.sh"
 chown -R root:wheel "$MACDPI_HOME/bin" "$MACDPI_LIB" "$MACDPI_VAR"
 # Ayarlar kullanıcıya ait: site eklemek ve profil değiştirmek şifre istemez.
-[ -f "$LIST_FILE" ] || install -m 644 "$SRC/etc/engelli-siteler.txt" "$LIST_FILE"
-[ -f "$CONFIG_FILE" ] || write_config orta
+if [ -f "$LIST_FILE" ]; then
+  # Güncellemede yeni sürümün listesindeki eksik alan adlarını ekle (kullanıcının eklediklerine dokunmaz).
+  have=$(clean_domains)
+  missing=$(LIST_FILE="$SRC/etc/engelli-siteler.txt"; clean_domains | grep -vxF "$have")
+  [ -n "$missing" ] && printf '\n# Geçit güncellemesiyle eklenenler\n%s\n' "$missing" >> "$LIST_FILE"
+else
+  install -m 644 "$SRC/etc/engelli-siteler.txt" "$LIST_FILE"
+fi
+# Yöntemlerin tanımı sürümle değişebilir: ayar dosyasını bulunulan profille yeniden yaz.
+write_config "$(current_profile)" || write_config hafif
 chown -R "$OWNER" "$MACDPI_ETC"; find "$MACDPI_ETC" -type d -exec chmod 755 {} +; find "$MACDPI_ETC" -type f -exec chmod 644 {} +
 chown root:wheel "$MACDPI_LOG"; chmod 755 "$MACDPI_LOG"
 touch "$MACDPI_LOG/agent.log" "$MACDPI_LOG/spoofdpi.log"; chown nobody "$MACDPI_LOG/spoofdpi.log"

@@ -52,8 +52,8 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(Profile.allCases, [.hafif, .orta, .guclu, .cokguclu])
         XCTAssertEqual(Profile.cokguclu.title, "Çok güçlü")
         XCTAssertEqual(Profile.guclu.title, "Güçlü")
-        XCTAssertEqual(Profile.hafif.detail, "İlk paketi site adından ikiye böler. En az müdahale.")
-        XCTAssertEqual(Profile.orta.detail, "Böler ve parçaların sırasını karıştırır. Çoğu ağda yeterli.")
+        XCTAssertEqual(Profile.hafif.detail, "İlk paketi site adının ortasından iki TLS kaydına böler. Gecikme eklemez.")
+        XCTAssertEqual(Profile.orta.detail, "Kayıtlara böler ve parçaların sırasını karıştırır. İnatçı ağlar için.")
         XCTAssertEqual(Profile.guclu.detail, "İlk paketi bayt bayt gönderir. İnatçı ağlar için.")
         XCTAssertEqual(Profile.orta.id, "orta")
     }

@@ -21,7 +21,7 @@ index d5b09c1..861530e 100644
  	if plans := findStructSliceFrom[SegmentPlan](
  		m,
 diff --git a/internal/desync/tls.go b/internal/desync/tls.go
-index e355ea8..468e7cf 100644
+index e355ea8..414dc75 100644
 --- a/internal/desync/tls.go
 +++ b/internal/desync/tls.go
 @@ -127,6 +127,11 @@ func split(
@@ -29,14 +29,14 @@ index e355ea8..468e7cf 100644
  	var segments []Segment
  	var err error
 +	if opts.TLSRecordSplit {
-+		if segs, ok := splitTLSRecord(raw, msg); ok {
++		if segs, ok := splitTLSRecord(raw, msg, opts.Disorder); ok {
 +			return segs
 +		}
 +	}
  	switch mode {
  	case config.HTTPSSplitModeSNI:
  		var start, end int
-@@ -435,3 +440,41 @@ func genPatternMask() uint64 {
+@@ -435,3 +440,42 @@ func genPatternMask() uint64 {
  
  	return ret
  }
@@ -45,8 +45,9 @@ index e355ea8..468e7cf 100644
 +// the SNI hostname and sends each record as its own TCP segment. DPI boxes
 +// that reassemble TCP but only parse the first TLS record never see the
 +// whole hostname; TLS servers must accept handshake messages split across
-+// records (RFC 8446 5.1), so the site itself is unaffected.
-+func splitTLSRecord(raw []byte, msg *proto.TLSMessage) ([]Segment, bool) {
++// records (RFC 8446 5.1), so the site itself is unaffected. With disorder the
++// first record is sent lazily (TTL 1) so it arrives after the second one.
++func splitTLSRecord(raw []byte, msg *proto.TLSMessage, disorder bool) ([]Segment, bool) {
 +	start, end, err := msg.ExtractSNIOffset()
 +	if err != nil || end-start < 2 {
 +		return nil, false
@@ -55,7 +56,7 @@ index e355ea8..468e7cf 100644
 +	if !ok {
 +		return nil, false
 +	}
-+	return []Segment{{Packet: out[:cut]}, {Packet: out[cut:]}}, true
++	return []Segment{{Packet: out[:cut], Lazy: disorder}, {Packet: out[cut:]}}, true
 +}
 +
 +// tlsRecordCut rewrites a single TLS record so that its payload is carried in
@@ -80,10 +81,10 @@ index e355ea8..468e7cf 100644
 +}
 diff --git a/internal/desync/tlsrec_test.go b/internal/desync/tlsrec_test.go
 new file mode 100644
-index 0000000..2e56f4b
+index 0000000..0bfe1a7
 --- /dev/null
 +++ b/internal/desync/tlsrec_test.go
-@@ -0,0 +1,55 @@
+@@ -0,0 +1,61 @@
 +package desync
 +
 +import (
@@ -103,11 +104,17 @@ index 0000000..2e56f4b
 +	if err != nil {
 +		t.Fatal(err)
 +	}
-+	segs, ok := splitTLSRecord(raw, msg)
++	segs, ok := splitTLSRecord(raw, msg, false)
 +	if !ok || len(segs) != 2 {
 +		t.Fatalf("split failed: ok=%v segs=%d", ok, len(segs))
 +	}
 +	out := append(append([]byte{}, segs[0].Packet...), segs[1].Packet...)
++	if segs[0].Lazy {
++		t.Fatal("lazy without disorder")
++	}
++	if d, _ := splitTLSRecord(raw, msg, true); !d[0].Lazy || d[1].Lazy {
++		t.Fatal("disorder must delay only the first record")
++	}
 +	if len(out) != len(raw)+5 {
 +		t.Fatalf("len %d, want %d", len(out), len(raw)+5)
 +	}

@@ -81,11 +81,15 @@ final class CLITests: XCTestCase {
         _ = await cli.remove(["a.com"])
         _ = await cli.setEnabled(true)
         _ = await cli.setEnabled(false)
+        _ = await cli.launchDiscord(restart: true)
+        _ = await cli.launchDiscord(restart: false)
         XCTAssertEqual(runner.calls, [
             .init(exe: "/usr/local/bin/macdpi", args: ["ekle", "a.com", "b.com"]),
             .init(exe: "/usr/local/bin/macdpi", args: ["cikar", "a.com"]),
             .init(exe: "/usr/local/bin/macdpi", args: ["ac"]),
             .init(exe: "/usr/local/bin/macdpi", args: ["kapat"]),
+            .init(exe: "/usr/local/bin/macdpi", args: ["discord", "--yeniden"]),
+            .init(exe: "/usr/local/bin/macdpi", args: ["discord"]),
         ])
     }
 
