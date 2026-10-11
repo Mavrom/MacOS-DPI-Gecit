@@ -63,7 +63,7 @@ chown -R root:wheel "$MACDPI_HOME/bin" "$MACDPI_LIB" "$MACDPI_VAR"
 # Ayarlar kullanıcıya ait: site eklemek ve profil değiştirmek şifre istemez.
 [ -f "$LIST_FILE" ] || install -m 644 "$SRC/etc/engelli-siteler.txt" "$LIST_FILE"
 [ -f "$CONFIG_FILE" ] || write_config orta
-chown -R "$OWNER" "$MACDPI_ETC"; chmod 755 "$MACDPI_ETC"; chmod 644 "$MACDPI_ETC"/*
+chown -R "$OWNER" "$MACDPI_ETC"; find "$MACDPI_ETC" -type d -exec chmod 755 {} +; find "$MACDPI_ETC" -type f -exec chmod 644 {} +
 chown root:wheel "$MACDPI_LOG"; chmod 755 "$MACDPI_LOG"
 touch "$MACDPI_LOG/agent.log" "$MACDPI_LOG/spoofdpi.log"; chown nobody "$MACDPI_LOG/spoofdpi.log"
 xattr -cr "$MACDPI_HOME" 2>/dev/null || true

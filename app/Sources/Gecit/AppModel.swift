@@ -130,17 +130,19 @@ final class AppModel: ObservableObject {
     func refresh() async {
         let s = await probe.probe()
         let network = PrimaryNetwork.serviceName()
+        let networkKey = PrimaryNetwork.key()
         if s != status { status = s }
         primaryNetwork = network
         loaded = true
         if windowVisible { logLines = Self.readLogs(paths) }
 
-        // Ağ değişti: engelli siteler hâlâ açılıyor mu, bakıp gerekirse yöntemi kendisi bulsun.
-        if let network, network != lastNetwork {
+        // Ağ değişti (aynı Wi-Fi servisinde başka bir modem ya da telefon paylaşımı da sayılır):
+        // o ağın yöntemine geç.
+        if let network, let networkKey, networkKey != lastNetwork {
             let first = lastNetwork == nil
-            lastNetwork = network
-            // Beklemeden: heal saniyeler sürer, refresh'i bekleyenleri tutmasın.
-            if !first { Task { await heal(reason: "\(network) ağına geçildi") } }
+            lastNetwork = networkKey
+            // Beklemeden: ayar saniyeler sürer, refresh'i bekleyenleri tutmasın.
+            if !first { Task { await networkChanged(network) } }
         }
     }
 
@@ -191,9 +193,24 @@ final class AppModel: ObservableObject {
         guard busy == nil, status.installed else { return }
         busy = .tuning
         tuneNote = "Bu ağ için en uygun yöntem aranıyor…"
+        runTune(cli.autoTune())
+    }
+
+    /// Ağ değişti: bu ağda daha önce seçilen yöntemi kullan, yoksa en hafiften başlayıp ara.
+    /// Böylece telefon paylaşımında gereken güçlü yöntem, evdeki ağda gereksiz yere kalmaz.
+    func networkChanged(_ name: String) async {
+        guard busy == nil, status.installed, status.enabled else { return }
+        try? await Task.sleep(nanoseconds: 4_000_000_000) // ajan yeni ağı ayarlasın
+        guard busy == nil, status.enabled else { return }
+        busy = .tuning
+        tuneNote = "\(name) ağına geçildi, bu ağın yöntemi ayarlanıyor…"
+        runTune(cli.networkChanged())
+    }
+
+    private func runTune(_ lines: AsyncStream<String>) {
         Task {
             var chosen: Profile?
-            for await line in cli.autoTune() {
+            for await line in lines {
                 if let p = MacdpiCLI.chosenProfile(fromAutoTuneLine: line) { chosen = p }
                 if line.hasPrefix("Deneniyor:"), let p = Profile(rawValue: line.dropFirst(10).trimmingCharacters(in: .whitespaces)) {
                     tuneNote = "\(p.title) yöntem deneniyor…"
@@ -519,6 +536,17 @@ enum Admin {
 
 /// Şu an internete çıkılan ağ servisinin adı ("Wi-Fi", "iPhone USB"...).
 enum PrimaryNetwork {
+    /// Ağı ayırt eden anahtar: etkin arayüz + ağ geçidi. Wi-Fi'da evdeki modemden telefon
+    /// paylaşımına geçmek servis adını değiştirmez, ağ geçidini değiştirir.
+    static func key() -> String? {
+        guard let store = SCDynamicStoreCreate(nil, "Gecit" as CFString, nil, nil),
+              let global = SCDynamicStoreCopyValue(store, "State:/Network/Global/IPv4" as CFString) as? [String: Any]
+        else { return nil }
+        let iface = global["PrimaryInterface"] as? String ?? ""
+        let router = global["Router"] as? String ?? ""
+        return iface.isEmpty && router.isEmpty ? nil : "\(iface)|\(router)"
+    }
+
     static func serviceName() -> String? {
         guard let store = SCDynamicStoreCreate(nil, "Gecit" as CFString, nil, nil),
               let global = SCDynamicStoreCopyValue(store, "State:/Network/Global/IPv4" as CFString) as? [String: Any],

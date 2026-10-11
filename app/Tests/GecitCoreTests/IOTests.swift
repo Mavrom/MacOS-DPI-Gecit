@@ -102,10 +102,12 @@ final class CLITests: XCTestCase {
         var got: [String] = []
         for await l in cli.setProfile(.guclu) { got.append(l) }
         for await l in cli.autoTune() { got.append(l) }
-        XCTAssertEqual(got.count, 4)
+        for await l in cli.networkChanged() { got.append(l) }
+        XCTAssertEqual(got.count, 6)
         XCTAssertEqual(runner.calls, [
             .init(exe: "/h/bin/macdpi", args: ["profil", "guclu"]),
             .init(exe: "/h/bin/macdpi", args: ["otoayar"]),
+            .init(exe: "/h/bin/macdpi", args: ["ag"]),
         ])
     }
 }

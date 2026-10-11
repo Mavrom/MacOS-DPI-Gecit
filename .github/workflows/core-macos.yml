@@ -46,6 +46,11 @@ jobs:
             echo "$p -> $code"; [ "$code" != "000" ]
           done
           macdpi otoayar
+          # Seçilen yöntem bu ağ için kaydedildi; ağ değişince onu kullanır
+          ls "/usr/local/macdpi/etc/aglar/" | grep -q .
+          macdpi ag | tee /tmp/ag.txt
+          grep -q "kayıtlı yöntem" /tmp/ag.txt
+          grep -q "Seçildi" /tmp/ag.txt
 
       - name: Normal siteler doğrudan açılıyor
         run: macdpi test
