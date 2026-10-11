@@ -373,7 +373,7 @@ final class AppModel: ObservableObject {
         } else {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
         }
-        for _ in 0..<12 {
+        for _ in 0..<25 {
             if PortProbe.isOpen(port: MacdpiPaths.proxyPort) { return }
             try? await Task.sleep(nanoseconds: 1_000_000_000)
         }

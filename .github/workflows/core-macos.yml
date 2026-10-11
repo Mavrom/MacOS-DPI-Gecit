@@ -122,6 +122,9 @@ jobs:
         if: always()
         run: |
           macdpi log || true
+          sudo launchctl print system/com.macdpi.spoofdpi | head -40 || true
+          nc -z 127.0.0.1 18080 && echo "18080 açık" || echo "18080 kapalı"
+          cat /usr/local/macdpi/etc/spoofdpi.toml || true
           sudo cat /usr/local/macdpi/log/agent.log || true
 
       - name: Kaldır ve temizliği doğrula
