@@ -473,10 +473,10 @@ private struct ProfileButton: View {
         } label: {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .bottom, spacing: 2) {
-                    ForEach(0..<3) { i in
+                    ForEach(0..<Profile.allCases.count, id: \.self) { i in
                         RoundedRectangle(cornerRadius: 1)
                             .fill(i < level ? (selected ? Palette.accent : Palette.muted) : Palette.line)
-                            .frame(width: 4, height: CGFloat(6 + i * 4))
+                            .frame(width: 4, height: CGFloat(5 + i * 3))
                     }
                 }
                 .frame(height: 14, alignment: .bottom)
@@ -494,7 +494,7 @@ private struct ProfileButton: View {
     }
 
     private var level: Int {
-        switch profile { case .hafif: return 1; case .orta: return 2; case .guclu: return 3 }
+        switch profile { case .hafif: return 1; case .orta: return 2; case .guclu: return 3; case .cokguclu: return 4 }
     }
 }
 

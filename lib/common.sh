@@ -37,6 +37,9 @@ clean_domains() {
 #   hafif : ClientHello'yu SNI'dan böler
 #   orta  : SNI'dan böler + parçaların sırasını bozar (varsayılan)
 #   guclu : ClientHello'yu 1 baytlık parçalara böler
+#   cokguclu : önce operatörün göreceği ama siteye ulaşmayan (düşük TTL) sahte bir ilk
+#              paket, sonra SNI'dan bölünmüş gerçeği. Paketleri ağ kartına doğrudan
+#              yazdığı için SpoofDPI'ın root çalışmasını gerektirir (ajan ayarlar).
 write_config() {
   case "$1" in
     hafif) https='split-mode = "sni"
@@ -46,8 +49,12 @@ disorder = true' ;;
     guclu) https='split-mode = "chunk"
 chunk-size = 1
 disorder = false' ;;
+    cokguclu) https='split-mode = "sni"
+disorder = false
+fake-count = 3' ;;
     *) return 1 ;;
   esac
+  doh=$(pick_doh)
   tmp="$CONFIG_FILE.tmp.$$"
   cat > "$tmp" <<CONF
 # Bu dosya "macdpi profil" komutuyla yazılır. Profil: $1
@@ -60,7 +67,7 @@ log-level = "warn"
 [dns]
 # Yalnızca engelli listedeki siteler buradan çözülür (operatör DNS'i atlanır).
 mode = "https"
-https-url = "https://1.1.1.1/dns-query"
+https-url = "$doh"
 qtype = "ipv4"
 cache = true
 
@@ -71,6 +78,23 @@ CONF
   mv "$tmp" "$CONFIG_FILE"
   printf '%s\n' "$1" > "$PROFILE_FILE"
 }
+
+# Engelli siteler şifreli DNS (DoH) ile çözülür. Bazı hatlar (ör. mobil operatörler)
+# birini kapatabildiği için sırayla dener, bu ağda cevap veren ilkini seçer. Adresler IP
+# olarak yazılı: DoH sunucusunun adını çözmek için operatör DNS'ine hiç gidilmez.
+DOH_URLS="https://1.1.1.1/dns-query https://1.0.0.1/dns-query https://8.8.8.8/dns-query https://9.9.9.9/dns-query"
+DOH_PROBE=AAABAAABAAAAAAAAB2Rpc2NvcmQDY29tAAABAAE  # discord.com A sorgusu (RFC 8484)
+pick_doh() {
+  for u in $DOH_URLS; do
+    r=$(curl -s --noproxy '*' -o /dev/null -w '%{http_code} %{content_type}' --max-time 3 \
+      -H 'accept: application/dns-message' "$u?dns=$DOH_PROBE" 2>/dev/null) || r=  # kur.sh "set -e" ile çalışır
+    case "$r" in "200 application/dns-message"*) echo "$u"; return 0 ;; esac
+  done
+  echo "https://1.1.1.1/dns-query"
+}
+
+# Sahte paket yöntemi root ister; ajan SpoofDPI servisini buna göre ayarlar.
+needs_root() { grep -q '^fake-count' "$CONFIG_FILE" 2>/dev/null; }
 
 # Ağ başına seçilen yöntem burada tutulur: evde hafif çalışıyorsa, telefon paylaşımında
 # güçlü gerekse bile eve dönünce yine hafif kullanılsın.
