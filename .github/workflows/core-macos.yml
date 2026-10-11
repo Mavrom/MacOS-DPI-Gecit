@@ -16,8 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.2'
+          cache: false
+
+      - name: Motoru derle (SpoofDPI + TLS kaydı bölme)
+        run: sh motor/derle.sh /tmp/motor/spoofdpi
+
       - name: Kur
-        run: sudo sh kur.sh --sessiz --kullanici "$USER"
+        run: sudo sh kur.sh --sessiz --kullanici "$USER" --bin /tmp/motor/spoofdpi
 
       - name: Servisler ayakta
         run: |

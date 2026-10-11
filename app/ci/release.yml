@@ -21,6 +21,10 @@ jobs:
         run: for f in ../kur.sh ../kaldir.sh ../lib/*.sh ../lib/macdpi build.sh paketle.sh paket/scripts/*; do sh -n "$f"; done
       - name: Birim testleri
         run: swift test
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.2'
+          cache: false
       - name: Paket
         run: |
           if [ "$GITHUB_REF_TYPE" = tag ]; then SURUM="${GITHUB_REF_NAME#v}"; else SURUM=$(cat ../SURUM); fi
