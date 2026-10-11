@@ -1,7 +1,7 @@
 import Foundation
 
 public enum Profile: String, CaseIterable, Identifiable, Sendable {
-    case hafif, orta, guclu
+    case hafif, orta, guclu, cokguclu
 
     public var id: String { rawValue }
 
@@ -10,6 +10,7 @@ public enum Profile: String, CaseIterable, Identifiable, Sendable {
         case .hafif: return "Hafif"
         case .orta: return "Orta"
         case .guclu: return "Güçlü"
+        case .cokguclu: return "Çok güçlü"
         }
     }
 
@@ -18,6 +19,7 @@ public enum Profile: String, CaseIterable, Identifiable, Sendable {
         case .hafif: return "İlk paketi site adından ikiye böler. En az müdahale."
         case .orta: return "Böler ve parçaların sırasını karıştırır. Çoğu ağda yeterli."
         case .guclu: return "İlk paketi bayt bayt gönderir. İnatçı ağlar için."
+        case .cokguclu: return "Önce operatörün göreceği sahte bir ilk paket, sonra gerçeğini bölerek gönderir. Mobil hat gibi en inatçı ağlar için."
         }
     }
 

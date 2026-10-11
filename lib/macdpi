@@ -29,7 +29,18 @@ test_engelli() { # proxy üzerinden engelli siteleri dener; hepsi açılırsa 0 
 
 restart_wait() { # ajanın SpoofDPI'ı yeni profille yeniden başlatmasını bekle
   want=$(shasum < "$CONFIG_FILE" | cut -d' ' -f1)
-  i=0; while [ $i -lt 20 ]; do [ "$(cat "$MACDPI_VAR/config.sum" 2>/dev/null)" = "$want" ] && break; sleep 1; i=$((i+1)); done
+  i=0; while [ $i -lt 20 ]; do
+    [ "$(cat "$MACDPI_VAR/config.sum" 2>/dev/null)" = "$want" ] && break
+    # Ajan yazma sırasında çalışıp değişikliği kaçırdıysa klasörü dürterek yeniden tetikle.
+    case $i in 4|10) : > "$MACDPI_ETC/.durt" && rm -f "$MACDPI_ETC/.durt" ;; esac
+    sleep 1; i=$((i+1))
+  done
+  i=0; while [ $i -lt 10 ]; do nc -z 127.0.0.1 $PROXY_PORT 2>/dev/null && return 0; sleep 1; i=$((i+1)); done
+  return 1
+}
+
+net_wait() { # sahte paket yönteminde ajanın SpoofDPI'ı yeni ağa göre yeniden başlatmasını bekle
+  i=0; while [ $i -lt 10 ]; do [ "$(cat "$MACDPI_VAR/net.id" 2>/dev/null)" = "$1" ] && break; sleep 1; i=$((i+1)); done
   i=0; while [ $i -lt 10 ]; do nc -z 127.0.0.1 $PROXY_PORT 2>/dev/null && return 0; sleep 1; i=$((i+1)); done
   return 1
 }
@@ -80,15 +91,15 @@ case "$cmd" in
     ;;
   liste) clean_domains ;;
   profil)
-    if [ -z "$1" ]; then echo "Şu anki profil: $(current_profile)  (seçenekler: hafif, orta, guclu)"; exit 0; fi
-    write_config "$1" || { echo "Bilinmeyen profil: $1 (hafif, orta, guclu)"; exit 1; }
+    if [ -z "$1" ]; then echo "Şu anki profil: $(current_profile)  (seçenekler: hafif, orta, guclu, cokguclu)"; exit 0; fi
+    write_config "$1" || { echo "Bilinmeyen profil: $1 (hafif, orta, guclu, cokguclu)"; exit 1; }
     echo "Profil: $1. SpoofDPI yeniden başlatılıyor..."
     # Yalnızca çalışan yöntem bu ağ için hatırlansın (denenip tutmayan değil).
     restart_wait && test_engelli && remember_profile "$1"
     ;;
   otoayar)
     echo "Bu ağda çalışan en hafif yöntemi arıyorum..."
-    for p in hafif orta guclu; do
+    for p in hafif orta guclu cokguclu; do
       echo "Deneniyor: $p"
       write_config "$p"
       if ! restart_wait; then echo "SpoofDPI bu yöntemle açılmadı: $p"; continue; fi
@@ -108,9 +119,10 @@ case "$cmd" in
     id=$(network_id); p=""
     [ -n "$id" ] && [ -f "$NETS_DIR/$id" ] && p=$(cat "$NETS_DIR/$id")
     case "$p" in
-      hafif|orta|guclu)
+      hafif|orta|guclu|cokguclu)
         echo "Bu ağ için kayıtlı yöntem: $p"
-        if [ "$p" != "$(current_profile)" ]; then write_config "$p"; restart_wait; fi
+        if [ "$p" != "$(current_profile)" ]; then write_config "$p"; restart_wait
+        elif needs_root; then net_wait "$id"; fi
         if test_engelli; then echo "$(yesil Seçildi:) $p"; exit 0; fi
         echo "Kayıtlı yöntem bu sefer çalışmadı, yeniden aranıyor." ;;
       *) echo "Bu ağ ilk kez görülüyor." ;;
@@ -142,7 +154,7 @@ Kullanım: macdpi <komut>
   ekle site.com   Engelli listesine site ekler
   cikar site.com  Listeden çıkarır
   liste           Listeyi gösterir
-  profil [ad]     Yöntemi gösterir/değiştirir: hafif, orta, guclu
+  profil [ad]     Yöntemi gösterir/değiştirir: hafif, orta, guclu, cokguclu
   otoayar         Bu ağda çalışan en hafif yöntemi kendisi seçer
   ag              Ağ değişince: bu ağın kayıtlı yöntemini kullanır, yoksa otoayar
   kapat / ac      Geçici olarak kapatır / açar

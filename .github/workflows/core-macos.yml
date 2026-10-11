@@ -40,11 +40,17 @@ jobs:
 
       - name: Her profil proxy üzerinden HTTPS açıyor
         run: |
-          for p in hafif orta guclu; do
+          spoof_user() { ps -o user= -p "$(pgrep -f /usr/local/macdpi/bin/spoofdpi | head -1)" | tr -d ' '; }
+          grep https-url /usr/local/macdpi/etc/spoofdpi.toml
+          for p in hafif orta guclu cokguclu; do
             macdpi profil $p
             code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 -x http://127.0.0.1:18080 https://discord.com/)
-            echo "$p -> $code"; [ "$code" != "000" ]
+            echo "$p -> $code (SpoofDPI kullanıcısı: $(spoof_user))"; [ "$code" != "000" ]
           done
+          # Sahte paket yöntemi root ister; diğerleri yetkisiz kullanıcıya döner
+          [ "$(spoof_user)" = root ]
+          macdpi profil hafif
+          sleep 2; [ "$(spoof_user)" = nobody ]
           macdpi otoayar
           # Seçilen yöntem bu ağ için kaydedildi; ağ değişince onu kullanır
           ls "/usr/local/macdpi/etc/aglar/" | grep -q .

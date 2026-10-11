@@ -40,6 +40,8 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(Profile.read(from: f), .guclu)
         try "  hafif  ".write(to: f, atomically: true, encoding: .utf8)
         XCTAssertEqual(Profile.read(from: f), .hafif)
+        try "cokguclu\n".write(to: f, atomically: true, encoding: .utf8)
+        XCTAssertEqual(Profile.read(from: f), .cokguclu)
         try "bozuk".write(to: f, atomically: true, encoding: .utf8)
         XCTAssertEqual(Profile.read(from: f), .orta)
         try "".write(to: f, atomically: true, encoding: .utf8)
@@ -47,7 +49,8 @@ final class ModelTests: XCTestCase {
     }
 
     func testProfileText() {
-        XCTAssertEqual(Profile.allCases, [.hafif, .orta, .guclu])
+        XCTAssertEqual(Profile.allCases, [.hafif, .orta, .guclu, .cokguclu])
+        XCTAssertEqual(Profile.cokguclu.title, "Çok güçlü")
         XCTAssertEqual(Profile.guclu.title, "Güçlü")
         XCTAssertEqual(Profile.hafif.detail, "İlk paketi site adından ikiye böler. En az müdahale.")
         XCTAssertEqual(Profile.orta.detail, "Böler ve parçaların sırasını karıştırır. Çoğu ağda yeterli.")
@@ -144,6 +147,7 @@ final class ModelTests: XCTestCase {
     func testChosenProfile() {
         XCTAssertEqual(MacdpiCLI.chosenProfile(fromAutoTuneLine: "Seçildi: hafif"), .hafif)
         XCTAssertEqual(MacdpiCLI.chosenProfile(fromAutoTuneLine: "\u{1B}[32mSeçildi:\u{1B}[0m guclu"), .guclu)
+        XCTAssertEqual(MacdpiCLI.chosenProfile(fromAutoTuneLine: "Seçildi: cokguclu"), .cokguclu)
         XCTAssertEqual(MacdpiCLI.chosenProfile(fromAutoTuneLine: "Seçildi: orta  "), .orta)
         XCTAssertNil(MacdpiCLI.chosenProfile(fromAutoTuneLine: "Deneniyor: orta"))
         XCTAssertNil(MacdpiCLI.chosenProfile(fromAutoTuneLine: "Seçildi: bilinmeyen"))

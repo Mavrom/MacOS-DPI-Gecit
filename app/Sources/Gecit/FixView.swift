@@ -96,12 +96,12 @@ struct FixPanel: View {
         case .notBlocked:
             return "Doğrudan bağlantıyla açılıyor, Geçit'e gerek yok. Listeden çıkarırsan her zamanki gibi açılır."
         case .exhausted:
-            return "Üç yöntem de işe yaramadı ve site doğrudan da açılmıyor. Ya şu an kapalı ya da adresinden (IP) engellenmiş; bu durumda yalnızca VPN çözer."
+            return "Dört yöntem de işe yaramadı ve site doğrudan da açılmıyor. Ya şu an kapalı ya da adresinden (IP) engellenmiş; bu durumda yalnızca VPN çözer."
         }
     }
 }
 
-/// Üç ışıklı merdiven: Hafif → Orta → Güçlü.
+/// Işıklı merdiven: Hafif → Orta → Güçlü → Çok güçlü.
 struct LadderView: View {
     let current: Profile
     let phase: AppModel.FixPhase
